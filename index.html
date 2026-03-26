@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>MBTI おじさん診断</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0f1729;
+  --bg-card: #1a2340;
+  --accent: #6c63ff;
+  --accent-light: #8b83ff;
+  --accent-glow: rgba(108, 99, 255, 0.3);
+  --text: #e8e6f0;
+  --text-dim: #8a8a9a;
+  --choice-a: #4ecdc4;
+  --choice-b: #ff6b6b;
+  --radius: 16px;
+  --font: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#app {
+  width: 100%; height: 100%;
+  max-width: 480px; margin: 0 auto;
+  position: relative; overflow: hidden;
+}
+
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.screen.active { opacity: 1; pointer-events: auto; }
+
+/* Start Screen */
+#start-screen {
+  justify-content: center; align-items: center;
+  text-align: center; padding: 2rem;
+  background: radial-gradient(ellipse at 50% 40%, rgba(108,99,255,0.15), transparent 70%);
+}
+.start-content { animation: fadeInUp 0.6s ease; }
+.logo { font-size: 5rem; margin-bottom: 1rem; filter: drop-shadow(0 0 20px var(--accent-glow)); }
+h1 {
+  font-size: 1.8rem; font-weight: 900; margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--accent-light), var(--choice-a));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.subtitle { font-size: 0.95rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 1.5rem; }
+.time-badge {
+  display: inline-block; background: rgba(108,99,255,0.15);
+  border: 1px solid rgba(108,99,255,0.3); border-radius: 20px;
+  padding: 0.4rem 1.2rem; font-size: 0.85rem; color: var(--accent-light); margin-bottom: 2rem;
+}
+.btn-primary {
+  display: block; width: 100%; max-width: 280px; margin: 0 auto 1.5rem;
+  padding: 1rem 2rem; font-size: 1.1rem; font-weight: 700; font-family: var(--font);
+  color: #fff; background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  border: none; border-radius: 50px; cursor: pointer;
+  box-shadow: 0 4px 20px var(--accent-glow); transition: transform 0.2s;
+}
+.btn-primary:active { transform: scale(0.96); }
+.hint { font-size: 0.75rem; color: var(--text-dim); }
+
+/* Quiz Screen */
+#quiz-screen { padding: 1rem 1rem 0; }
+
+#progress-bar { padding: 0.5rem 0 1rem; }
+.progress-slots { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+.progress-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.slot-pair {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  font-size: 0.65rem; color: var(--text-dim); font-weight: 500;
+}
+.slot-pair span { transition: all 0.3s ease; }
+.slot-pair span.confirmed {
+  font-size: 1.1rem; font-weight: 900; color: var(--accent-light);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+.slot-pair span.dimmed { opacity: 0.3; font-size: 0.55rem; }
+.slot-divider { color: var(--text-dim); opacity: 0.3; font-size: 0.6rem; align-self: center; }
+.progress-track {
+  width: 100%; height: 4px; background: rgba(255,255,255,0.08);
+  border-radius: 2px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--choice-a));
+  border-radius: 2px; transition: width 0.4s ease;
+}
+
+/* Card */
+#card-container {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  perspective: 1000px; padding: 0.5rem 0; min-height: 0;
+}
+.card {
+  position: relative; width: 100%; max-width: 380px;
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius); padding: 2.5rem 1.5rem; text-align: center;
+  cursor: grab; touch-action: pan-y; will-change: transform;
+}
+.card:active { cursor: grabbing; }
+.card.swiping { transition: none !important; }
+.card.animate-out { transition: transform 0.35s ease, opacity 0.35s ease; }
+.card-label {
+  font-size: 0.75rem; font-weight: 700; color: var(--accent-light);
+  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.5rem;
+}
+.card-question { font-size: 1.2rem; font-weight: 700; line-height: 1.6; }
+.swipe-hint {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  font-size: 1.5rem; font-weight: 900; opacity: 0;
+  transition: opacity 0.15s; pointer-events: none;
+}
+.swipe-hint-left { left: 1rem; color: var(--choice-b); }
+.swipe-hint-right { right: 1rem; color: var(--choice-a); }
+
+/* Choice Buttons */
+.choice-buttons { display: flex; gap: 0.75rem; padding: 1rem 0 2rem; }
+.btn-choice {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+  padding: 0.8rem 0.5rem; font-family: var(--font);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+  cursor: pointer; transition: transform 0.15s, background 0.15s, border-color 0.15s;
+  background: var(--bg-card);
+}
+.btn-choice:active { transform: scale(0.96); }
+.btn-a { color: var(--choice-a); }
+.btn-a:hover, .btn-a:active { background: rgba(78,205,196,0.1); border-color: rgba(78,205,196,0.3); }
+.btn-b { color: var(--choice-b); }
+.btn-b:hover, .btn-b:active { background: rgba(255,107,107,0.1); border-color: rgba(255,107,107,0.3); }
+.choice-label { font-size: 1rem; font-weight: 900; }
+.choice-text {
+  font-size: 0.7rem; font-weight: 500; line-height: 1.4; color: var(--text-dim);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Result Screen */
+#result-screen {
+  overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 2rem 1.5rem;
+  background: radial-gradient(ellipse at 50% 20%, rgba(108,99,255,0.12), transparent 60%);
+}
+.result-content { animation: fadeInUp 0.6s ease; }
+.result-type-code {
+  text-align: center; font-size: 2.4rem; font-weight: 900; letter-spacing: 0.08em;
+  background: linear-gradient(135deg, var(--accent-light), var(--choice-a));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 0.5rem;
+}
+.result-catchphrase {
+  text-align: center; font-size: 1.1rem; font-weight: 700; margin-bottom: 2rem;
+}
+
+.ojisan-card {
+  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius); overflow: hidden; margin-bottom: 2rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.ojisan-placeholder {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.75rem; padding: 1.5rem; text-align: center;
+}
+.ojisan-emoji { font-size: 4rem; }
+.ojisan-prompt-label {
+  font-size: 0.65rem; font-weight: 700; color: var(--accent-light);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.ojisan-prompt-text {
+  font-size: 0.65rem; color: var(--text-dim); line-height: 1.5;
+  max-height: 4.5em; overflow: hidden;
+}
+
+.result-description {
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem;
+}
+.result-description h3 {
+  font-size: 0.8rem; font-weight: 700; color: var(--accent-light);
+  margin-bottom: 0.75rem; letter-spacing: 0.05em;
+}
+.result-description p { font-size: 0.9rem; line-height: 1.8; }
+
+.spectrum-breakdown { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 2rem; }
+.spectrum-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; }
+.spectrum-label-left, .spectrum-label-right { width: 2rem; font-weight: 700; text-align: center; }
+.spectrum-label-left { color: var(--choice-a); }
+.spectrum-label-right { color: var(--choice-b); }
+.spectrum-bar-track {
+  flex: 1; height: 6px; background: rgba(255,255,255,0.06);
+  border-radius: 3px; position: relative; overflow: hidden;
+}
+.spectrum-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.spectrum-bar-fill.left { background: var(--choice-a); }
+.spectrum-bar-fill.right { background: var(--choice-b); margin-left: auto; }
+.spectrum-confirmed {
+  font-size: 0.75rem; font-weight: 900; color: var(--accent-light); width: 1.2rem; text-align: center;
+}
+
+.btn-retry {
+  display: block; width: 100%; padding: 1rem; font-size: 1rem; font-weight: 700;
+  font-family: var(--font); color: var(--accent-light);
+  background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.3);
+  border-radius: 50px; cursor: pointer; transition: transform 0.2s; margin-bottom: 2rem;
+}
+.btn-retry:active { transform: scale(0.96); background: rgba(108,99,255,0.2); }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card-enter { animation: cardEnter 0.3s ease; }
+@keyframes cardEnter {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.spectrum-confirmed-flash { animation: confirmedFlash 0.5s ease; }
+@keyframes confirmedFlash {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); filter: brightness(1.5); }
+  100% { transform: scale(1); }
+}
+
+@media (max-height: 667px) {
+  .card { padding: 1.5rem 1.2rem; }
+  .card-question { font-size: 1.05rem; }
+  .choice-buttons { padding: 0.5rem 0 1.5rem; }
+}
+@media (min-width: 481px) {
+  #app { border-left: 1px solid rgba(255,255,255,0.04); border-right: 1px solid rgba(255,255,255,0.04); }
+}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="start-screen" class="screen active">
+      <div class="start-content">
+        <div class="logo">&#x1F9D4;</div>
+        <h1>おじさん MBTI 診断</h1>
+        <p class="subtitle">あなたはどんな性格タイプの<br>「おじさん」カナ？</p>
+        <p class="time-badge">&#x26A1; 約60秒で完了</p>
+        <button id="start-btn" class="btn-primary">診断スタート</button>
+        <p class="hint">カードを左右にスワイプ、またはボタンをタップ</p>
+      </div>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+      <div id="progress-bar">
+        <div class="progress-slots" id="progress-slots"></div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+      <div id="card-container">
+        <div id="card" class="card">
+          <div class="card-label" id="card-label"></div>
+          <p class="card-question" id="card-question"></p>
+          <div class="swipe-hint swipe-hint-left" id="hint-left">&larr; B</div>
+          <div class="swipe-hint swipe-hint-right" id="hint-right">A &rarr;</div>
+        </div>
+      </div>
+      <div class="choice-buttons">
+        <button class="btn-choice btn-b" id="btn-b">
+          <span class="choice-label">B</span>
+          <span class="choice-text" id="choice-b-text"></span>
+        </button>
+        <button class="btn-choice btn-a" id="btn-a">
+          <span class="choice-label">A</span>
+          <span class="choice-text" id="choice-a-text"></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="result-screen" class="screen">
+      <div class="result-content" id="result-content"></div>
+    </div>
+  </div>
+
+<script>
+// === DATA ===
+const spectrums = [
+  {
+    id: 'EI', labels: ['E', 'I'], fullLabels: ['Extraversion', 'Introversion'],
+    questions: [
+      { text: '社交的なイベントの後…', a: 'エネルギーが湧いてくる', b: '一人で静かに過ごしたくなる' },
+      { text: 'グループの中では…', a: '話す側になることが多い', b: '聞く側になることが多い' },
+      { text: '新しい環境に入ると…', a: 'すぐに人に話しかける', b: 'まず周りを観察する' },
+    ],
+  },
+  {
+    id: 'SN', labels: ['S', 'N'], fullLabels: ['Sensing', 'Intuition'],
+    questions: [
+      { text: '何かを学ぶとき…', a: '具体的・実践的な例を重視する', b: '未来の可能性や抽象的な概念を重視する' },
+      { text: '問題を解くとき…', a: '過去の経験やデータに頼る', b: '直感やひらめきに頼る' },
+      { text: '説明を受けるとき好むのは…', a: 'ステップバイステップの詳細', b: '全体像とビジョン' },
+    ],
+  },
+  {
+    id: 'TF', labels: ['T', 'F'], fullLabels: ['Thinking', 'Feeling'],
+    questions: [
+      { text: '友人が悩んでいるとき…', a: '論理的な解決策を提案する', b: '共感して気持ちに寄り添う' },
+      { text: '重要な決断をするとき…', a: '客観的な事実と論理を優先する', b: '人への影響や価値観を優先する' },
+      { text: '議論の中で大切なのは…', a: '正しい結論に到達すること', b: '全員が納得できること' },
+    ],
+  },
+  {
+    id: 'JP', labels: ['J', 'P'], fullLabels: ['Judging', 'Perceiving'],
+    questions: [
+      { text: '週末の過ごし方は…', a: 'だいたいの予定を立てておく', b: 'その場のノリで決める' },
+      { text: '仕事のスタイルは…', a: '計画通りに進めるのが好き', b: '締め切り直前に集中して仕上げる' },
+      { text: '旅行の計画は…', a: '事前にしっかり調べて予約する', b: '現地で気ままに動く方が楽しい' },
+    ],
+  },
+  {
+    id: 'AT', labels: ['A', 'T'], fullLabels: ['Assertive', 'Turbulent'],
+    questions: [
+      { text: 'ミスをした後は…', a: 'すぐ切り替えて次に進む', b: '深く振り返り、何度も反芻する' },
+      { text: 'プレッシャーの中では…', a: '落ち着いて自分を信じられる', b: '不安が高まり、より慎重になる' },
+      { text: '他人の評価について…', a: 'あまり気にならない', b: 'つい気になってしまう' },
+    ],
+  },
+  {
+    id: 'HL', labels: ['H', 'L'], fullLabels: ['Harmony', 'Lone Wolf'],
+    questions: [
+      { text: 'プロジェクトの成功とは…', a: 'チームの調和と共有された目標の達成', b: '個人の専門性とユニークな価値の証明' },
+      { text: '理想の働き方は…', a: 'チームで協力しながら進める', b: '一人で集中して成果を出す' },
+      { text: '評価されたいのは…', a: 'チームへの貢献度', b: '個人としてのスキルや実績' },
+    ],
+  },
+];
+
+const typeResults = {
+  ISTJ: { catchphrase: '信念を守る静かなる番人', description: 'ISTJのおじさんは、誠実で責任感が強く、規律を重んじる。黙々と組織を支え、約束は必ず守る。変化よりも安定を好み、長年培った経験と知識でチームの土台を築く。', prompt: 'A serious, dependable middle-aged Japanese man in a crisp white shirt and reading glasses, meticulously organizing files in a well-ordered traditional office. Warm wood tones, neat bookshelves, a vintage desk lamp. Symbolizes reliability and duty. Detailed illustration, warm lighting. --ar 16:9 --v 6.0' },
+  ISFJ: { catchphrase: '皆を包む温もりの守護者', description: 'ISFJのおじさんは、控えめだが深い思いやりを持つ。周囲の人の小さな変化に気づき、さりげなくサポートする。伝統を大切にし、家族やチームのために献身的に働く。', prompt: 'A gentle, warm middle-aged Japanese man in a cozy knit sweater, carefully tending a small garden in the courtyard of a traditional Japanese home. Soft afternoon sunlight, blooming flowers, a cup of tea nearby. Symbolizes nurturing care. Watercolor style, gentle tones. --ar 16:9 --v 6.0' },
+  INFJ: { catchphrase: '理想を紡ぐ孤高の預言者', description: 'INFJのおじさんは、深い洞察力と理想主義を持つ。表面上は穏やかだが、内面には強い信念が燃えている。人の心の奥底を見抜き、静かに世界をより良くしようとする。', prompt: 'A contemplative middle-aged Japanese man with deep, knowing eyes, sitting in a dimly lit study surrounded by philosophy books and a single candle. Rain patters on the window. An old fountain pen rests on an open journal. Mystical, introspective atmosphere. Oil painting style. --ar 16:9 --v 6.0' },
+  INTJ: { catchphrase: '未来を設計する冷徹なる建築家', description: 'INTJのおじさんは、戦略的思考と独立心の塊。常に数手先を読み、非効率を嫌う。少数精鋭を好み、自分のビジョンを実現するために冷静かつ大胆に行動する。', prompt: 'A sharp, calculated middle-aged Japanese man with a neatly trimmed beard, in a dark minimalist suit, standing in a futuristic command center looking at transparent holographic schematics. Cold blue lighting, precise geometric patterns. High-tech atmosphere. --ar 16:9 --v 6.0' },
+  ISTP: { catchphrase: '沈黙の中で機械を操る職人', description: 'ISTPのおじさんは、寡黙だが手先が器用で実践的。問題が起きたとき、冷静に状況を分析し、最小限の力で最大の効果を出す。自由を愛し、束縛を嫌う。', prompt: 'A quiet, focused middle-aged Japanese man in a worn leather apron, working on a vintage motorcycle in a cluttered but organized garage. Oil-stained hands, tools hanging on pegboard walls. Golden hour light through dusty windows. Realistic, cinematic style. --ar 16:9 --v 6.0' },
+  ISFP: { catchphrase: '風に吹かれる自由な芸術家', description: 'ISFPのおじさんは、穏やかで感受性豊か。言葉より行動で愛情を表現する。美しいものに惹かれ、自分のペースで人生を楽しむ。争いを避け、調和を大切にする。', prompt: 'A serene middle-aged Japanese man in a paint-stained linen shirt, painting a landscape en plein air on a hilltop overlooking the sea. A gentle breeze, scattered wildflowers, an easel and palette. Impressionist style, soft pastel colors, peaceful atmosphere. --ar 16:9 --v 6.0' },
+  INFP: { catchphrase: '内なる世界の繊細な仲介者', description: 'INFPのおじさんは、理想主義者で深い感情の持ち主。外見は穏やかだが、内面には豊かな想像の世界が広がる。人の痛みに敏感で、自分の価値観に忠実に生きる。', prompt: 'A thoughtful, weary-eyed middle-aged Japanese man with tousled graying hair, sitting by a quiet lake at dawn, holding a small journal. Dressed in a faded cardigan. Surreal, whimsical atmosphere with dreamlike reflections on the water. Soft, ethereal lighting. --ar 16:9 --v 6.0' },
+  INTP: { catchphrase: '終わりなき思考の迷宮を歩む論理学者', description: 'INTPのおじさんは、知的好奇心の権化。常に「なぜ？」を問い続け、理論と可能性の世界に没頭する。社交は苦手だが、専門分野では驚くほど饒舌になる。', prompt: 'A disheveled, intellectual middle-aged Japanese man with round glasses, surrounded by whiteboards covered in complex equations and diagrams in a chaotic university office. Stacks of books everywhere, cold coffee on the desk. Warm but cluttered atmosphere. Academic, realistic style. --ar 16:9 --v 6.0' },
+  ESTP: { catchphrase: '今この瞬間を生きるアクション起業家', description: 'ESTPのおじさんは、行動力とカリスマの持ち主。リスクを恐れず、目の前のチャンスを即座に掴む。退屈が大敵で、常に刺激と挑戦を求める。交渉術にも長ける。', prompt: 'A charismatic, energetic middle-aged Japanese man in a sharp casual jacket, confidently negotiating at a bustling street market in Asia. Dynamic pose, vibrant market colors, street food stalls in background. High energy, cinematic action style. --ar 16:9 --v 6.0' },
+  ESFP: { catchphrase: '人生を祝うエンターテイナー', description: 'ESFPのおじさんは、場を明るくする天性のムードメーカー。今この瞬間を全力で楽しみ、周囲の人にも笑顔を届ける。直感的に人の気持ちを察し、楽しい空間を作る。', prompt: 'A jovial, animated middle-aged Japanese man in a colorful Hawaiian shirt, playing guitar at a lively izakaya surrounded by laughing friends. Warm lantern lighting, beer and yakitori on the table. Festive, joyful atmosphere. Vibrant illustration style. --ar 16:9 --v 6.0' },
+  ENFP: { catchphrase: '可能性に恋する情熱の広報運動家', description: 'ENFPのおじさんは、好奇心と情熱に溢れる。新しいアイデアに次々と飛びつき、人々を巻き込む力がある。型にはまらず、自由な発想で世界に彩りを添える。', prompt: 'A charismatic, smiling middle-aged Japanese man with colorful accessories and a creative hairstyle, standing on a stage during a lively cultural festival, gesturing passionately to an engaged crowd. Vibrant banners, confetti, energetic atmosphere. Pop art style. --ar 16:9 --v 6.0' },
+  ENTP: { catchphrase: '常識を壊す知的トリックスター', description: 'ENTPのおじさんは、議論と知的挑戦を愛する。既存のルールに疑問を投げかけ、新しい視点を提示する。ユーモアのセンスに優れ、退屈な会議を一変させる力を持つ。', prompt: 'A witty, sharp-eyed middle-aged Japanese man in a turtleneck, leaning against a wall covered with sticky notes and mind maps in a creative startup space. Mischievous smile, holding a marker. Modern, dynamic atmosphere with bold colors. Graphic novel style. --ar 16:9 --v 6.0' },
+  ESTJ: { catchphrase: '組織を動かす鉄壁の指揮官', description: 'ESTJのおじさんは、責任感が強く決断力がある。ルールと秩序を重んじ、チームを効率的に導く。伝統を尊重しつつも、成果にこだわる実務家。頼れるリーダーの典型。', prompt: 'A commanding, well-built middle-aged Japanese man in a perfectly pressed suit, standing at the head of a boardroom table giving directions. Polished mahogany table, city skyline through floor-to-ceiling windows. Authoritative, corporate atmosphere. Realistic, high-detail style. --ar 16:9 --v 6.0' },
+  ESFJ: { catchphrase: '皆の笑顔を守る太陽のような世話役', description: 'ESFJのおじさんは、社交的で思いやり深い。コミュニティの中心にいて、誰もが居心地よく過ごせるよう気を配る。伝統行事や人付き合いを大切にし、調和を保つ。', prompt: 'A warm, sociable middle-aged Japanese man in a neat polo shirt, hosting a neighborhood BBQ in a sunny backyard. Handing food to guests with a big smile, children playing nearby. Warm golden light, festive decorations. Wholesome, inviting atmosphere. Illustration style. --ar 16:9 --v 6.0' },
+  ENFJ: { catchphrase: '人の才能を開花させるカリスマ教師', description: 'ENFJのおじさんは、天性のリーダーでありメンター。人の可能性を見出し、成長を支援することに喜びを感じる。情熱的なスピーチで人を動かし、チームの士気を高める。', prompt: 'A passionate, inspiring middle-aged Japanese man in a smart casual outfit, leading a community workshop with animated gestures. Engaged audience of diverse people. Whiteboard with motivational diagrams. Warm, uplifting atmosphere. Bright, editorial illustration style. --ar 16:9 --v 6.0' },
+  ENTJ: { catchphrase: '帝国を築く大胆不敵な指揮官', description: 'ENTJのおじさんは、ビジョンと実行力を兼ね備えた天性の指揮官。大きな目標を設定し、周囲を巻き込んで達成する。効率を極めて追求し、弱さを見せることを嫌う。', prompt: 'A powerful, confident middle-aged Japanese man in a tailored dark overcoat, standing atop a skyscraper rooftop overlooking a glittering cityscape at night. Arms crossed, wind in his hair. Dramatic, cinematic lighting with city lights below. Epic, commanding atmosphere. --ar 16:9 --v 6.0' },
+};
+
+// === STATE ===
+const state = {
+  currentSpectrum: 0, currentQuestion: 0,
+  answers: [], results: [],
+  totalQuestionsAnswered: 0, isAnimating: false,
+};
+
+// === DOM ===
+const $ = (id) => document.getElementById(id);
+const startScreen = $('start-screen'), quizScreen = $('quiz-screen'), resultScreen = $('result-screen');
+const card = $('card'), cardLabel = $('card-label'), cardQuestion = $('card-question');
+const choiceAText = $('choice-a-text'), choiceBText = $('choice-b-text');
+const hintLeft = $('hint-left'), hintRight = $('hint-right');
+const progressSlots = $('progress-slots'), progressFill = $('progress-fill');
+const resultContent = $('result-content');
+
+// === INIT ===
+$('start-btn').addEventListener('click', startQuiz);
+$('btn-a').addEventListener('click', function() { answer('a'); });
+$('btn-b').addEventListener('click', function() { answer('b'); });
+setupSwipe();
+buildProgressSlots();
+
+function startQuiz() {
+  state.currentSpectrum = 0; state.currentQuestion = 0;
+  state.answers = []; state.results = [];
+  state.totalQuestionsAnswered = 0; state.isAnimating = false;
+  resetProgressSlots();
+  switchScreen(quizScreen);
+  showQuestion();
+}
+
+function switchScreen(target) {
+  [startScreen, quizScreen, resultScreen].forEach(function(s) { s.classList.remove('active'); });
+  target.classList.add('active');
+}
+
+// === PROGRESS ===
+function buildProgressSlots() {
+  progressSlots.innerHTML = '';
+  spectrums.forEach(function(sp, i) {
+    if (i > 0) {
+      var d = document.createElement('span');
+      d.className = 'slot-divider'; d.textContent = '\u00B7';
+      progressSlots.appendChild(d);
+    }
+    var slot = document.createElement('div');
+    slot.className = 'progress-slot';
+    slot.innerHTML = '<div class="slot-pair" data-spectrum="' + i + '"><span data-side="a">' + sp.labels[0] + '</span><span data-side="b">' + sp.labels[1] + '</span></div>';
+    progressSlots.appendChild(slot);
+  });
+}
+
+function resetProgressSlots() {
+  document.querySelectorAll('.slot-pair span').forEach(function(el) {
+    el.classList.remove('confirmed', 'dimmed', 'spectrum-confirmed-flash');
+  });
+  progressFill.style.width = '0%';
+}
+
+function confirmProgressSlot(idx, side) {
+  var pair = document.querySelector('.slot-pair[data-spectrum="' + idx + '"]');
+  if (!pair) return;
+  var c = pair.querySelector('[data-side="' + side + '"]');
+  var d = pair.querySelector('[data-side="' + (side === 'a' ? 'b' : 'a') + '"]');
+  c.classList.add('confirmed', 'spectrum-confirmed-flash');
+  d.classList.add('dimmed');
+}
+
+function updateProgressBar() {
+  progressFill.style.width = (state.results.length / spectrums.length * 100) + '%';
+}
+
+// === QUESTIONS ===
+function showQuestion() {
+  var sp = spectrums[state.currentSpectrum];
+  var q = sp.questions[state.currentQuestion];
+  cardLabel.textContent = sp.fullLabels[0] + ' vs ' + sp.fullLabels[1];
+  cardQuestion.textContent = q.text;
+  choiceAText.textContent = q.a;
+  choiceBText.textContent = q.b;
+  card.classList.remove('card-enter');
+  void card.offsetWidth;
+  card.classList.add('card-enter');
+}
+
+function answer(choice) {
+  if (state.isAnimating) return;
+  state.answers.push(choice);
+  state.totalQuestionsAnswered++;
+  var qIdx = state.currentQuestion;
+
+  if (qIdx === 0) {
+    state.currentQuestion = 1;
+    showQuestion();
+  } else if (qIdx === 1) {
+    if (state.answers[0] === state.answers[1]) {
+      confirmSpectrum(state.answers[0]);
+    } else {
+      state.currentQuestion = 2;
+      showQuestion();
+    }
+  } else if (qIdx === 2) {
+    var aCount = state.answers.filter(function(a) { return a === 'a'; }).length;
+    confirmSpectrum(aCount >= 2 ? 'a' : 'b');
+  }
+}
+
+function confirmSpectrum(side) {
+  state.results.push(side);
+  confirmProgressSlot(state.currentSpectrum, side);
+  updateProgressBar();
+  if (state.currentSpectrum < spectrums.length - 1) {
+    state.currentSpectrum++;
+    state.currentQuestion = 0;
+    state.answers = [];
+    showQuestion();
+  } else {
+    showResults();
+  }
+}
+
+// === RESULTS ===
+function showResults() {
+  var letters = state.results.map(function(side, i) {
+    return spectrums[i].labels[side === 'a' ? 0 : 1];
+  });
+  var mbti4 = letters.slice(0, 4).join('');
+  var at = letters[4], hl = letters[5];
+  var fullCode = mbti4 + '-' + at + '/' + hl;
+  var data = typeResults[mbti4];
+  if (!data) { resultContent.innerHTML = '<p>エラーが発生しました。</p>'; switchScreen(resultScreen); return; }
+
+  var emojiMap = {
+    INTJ:'\uD83E\uDDE0', INTP:'\uD83D\uDD2C', ENTJ:'\uD83D\uDC54', ENTP:'\uD83D\uDCA1',
+    INFJ:'\uD83D\uDD6F\uFE0F', INFP:'\uD83D\uDCD6', ENFJ:'\uD83C\uDF93', ENFP:'\uD83C\uDFA8',
+    ISTJ:'\uD83D\uDCCB', ISFJ:'\uD83C\uDF3F', ESTJ:'\uD83C\uDFE2', ESFJ:'\u2600\uFE0F',
+    ISTP:'\uD83D\uDD27', ISFP:'\uD83C\uDFA8', ESTP:'\uD83C\uDFCD\uFE0F', ESFP:'\uD83C\uDFB8',
+  };
+  var emoji = emojiMap[mbti4] || '\uD83E\uDDD4';
+
+  var atDesc = at === 'A'
+    ? '<strong style="color:var(--accent-light)">Assertive\uFF08\u81EA\u5DF1\u78BA\u4FE1\u578B\uFF09</strong>\uFF1A\u30B9\u30C8\u30EC\u30B9\u306B\u5F37\u304F\u3001\u81EA\u5206\u306E\u5224\u65AD\u3092\u4FE1\u983C\u3059\u308B\u3002\u611F\u60C5\u306B\u632F\u308A\u56DE\u3055\u308C\u306B\u304F\u3044\u3002'
+    : '<strong style="color:var(--accent-light)">Turbulent\uFF08\u614E\u91CD\u578B\uFF09</strong>\uFF1A\u5B8C\u74A7\u3092\u6C42\u3081\u3001\u5E38\u306B\u6539\u5584\u3092\u610F\u8B58\u3059\u308B\u3002\u7E4A\u7D30\u3060\u304C\u6210\u9577\u3078\u306E\u610F\u6B32\u304C\u9AD8\u3044\u3002';
+  var hlDesc = hl === 'H'
+    ? '<strong style="color:var(--accent-light)">Harmony\uFF08\u5354\u8ABF\u578B\uFF09</strong>\uFF1A\u30C1\u30FC\u30E0\u30EF\u30FC\u30AF\u3068\u8ABF\u548C\u3092\u91CD\u8996\u3002\u5171\u6709\u3055\u308C\u305F\u76EE\u6A19\u306B\u5411\u304B\u3063\u3066\u4EBA\u3068\u5354\u529B\u3059\u308B\u3053\u3068\u306B\u559C\u3073\u3092\u611F\u3058\u308B\u3002'
+    : '<strong style="color:var(--accent-light)">Lone Wolf\uFF08\u72EC\u7ACB\u578B\uFF09</strong>\uFF1A\u72EC\u7ACB\u3057\u3066\u50CD\u304F\u3053\u3068\u3092\u597D\u3080\u3002\u500B\u4EBA\u306E\u5C02\u9580\u6027\u3068\u72EC\u81EA\u306E\u4FA1\u5024\u3092\u8FFD\u6C42\u3059\u308B\u30B9\u30DA\u30B7\u30E3\u30EA\u30B9\u30C8\u3002';
+
+  var spectrumHTML = state.results.map(function(side, i) {
+    var sp = spectrums[i];
+    var isA = side === 'a';
+    return '<div class="spectrum-row">' +
+      '<span class="spectrum-label-left">' + sp.labels[0] + '</span>' +
+      '<div class="spectrum-bar-track"><div class="spectrum-bar-fill ' + (isA ? 'left' : 'right') + '" style="width:75%;' + (isA ? '' : 'margin-left:25%') + '"></div></div>' +
+      '<span class="spectrum-label-right">' + sp.labels[1] + '</span>' +
+      '<span class="spectrum-confirmed">' + sp.labels[isA ? 0 : 1] + '</span></div>';
+  }).join('');
+
+  resultContent.innerHTML =
+    '<div class="result-type-code">' + fullCode + '</div>' +
+    '<div class="result-catchphrase">' + data.catchphrase + '</div>' +
+    '<div class="ojisan-card"><div class="ojisan-placeholder">' +
+      '<div class="ojisan-emoji">' + emoji + '</div>' +
+      '<div class="ojisan-prompt-label">Image Generation Prompt</div>' +
+      '<div class="ojisan-prompt-text">' + data.prompt + '</div>' +
+    '</div></div>' +
+    '<div class="result-description"><h3>\u3042\u306A\u305F\u306E\u30BF\u30A4\u30D7</h3>' +
+      '<p>' + data.description + '</p>' +
+      '<p style="margin-top:0.75rem;color:var(--text-dim);font-size:0.8rem">' + atDesc + '</p>' +
+      '<p style="margin-top:0.5rem;color:var(--text-dim);font-size:0.8rem">' + hlDesc + '</p>' +
+    '</div>' +
+    '<div class="spectrum-breakdown">' + spectrumHTML + '</div>' +
+    '<button class="btn-retry" id="btn-retry">\u3082\u3046\u4E00\u5EA6\u8A3A\u65AD\u3059\u308B</button>';
+
+  $('btn-retry').addEventListener('click', function() { switchScreen(startScreen); });
+  switchScreen(resultScreen);
+  resultScreen.scrollTop = 0;
+}
+
+// === SWIPE ===
+function setupSwipe() {
+  var startX = 0, startY = 0, currentX = 0, isDragging = false;
+  var THRESHOLD = 80;
+
+  function onStart(x, y) {
+    if (state.isAnimating) return;
+    isDragging = true; startX = x; startY = y; currentX = 0;
+    card.classList.add('swiping');
+  }
+  function onMove(x, y) {
+    if (!isDragging) return;
+    var dx = x - startX, dy = y - startY;
+    if (Math.abs(dy) > Math.abs(dx) * 1.5 && Math.abs(dx) < 20) return;
+    currentX = dx;
+    card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx * 0.08) + 'deg)';
+    var op = Math.min(Math.abs(dx) / THRESHOLD, 1);
+    hintRight.style.opacity = dx > 0 ? op : 0;
+    hintLeft.style.opacity = dx < 0 ? op : 0;
+  }
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    card.classList.remove('swiping');
+    if (Math.abs(currentX) >= THRESHOLD) {
+      state.isAnimating = true;
+      var dir = currentX > 0 ? 1 : -1;
+      card.classList.add('animate-out');
+      card.style.transform = 'translateX(' + (dir * 400) + 'px) rotate(' + (dir * 30) + 'deg)';
+      card.style.opacity = '0';
+      setTimeout(function() {
+        card.classList.remove('animate-out');
+        card.style.transform = ''; card.style.opacity = '';
+        state.isAnimating = false;
+        answer(dir > 0 ? 'a' : 'b');
+      }, 300);
+    } else {
+      card.style.transform = '';
+      hintLeft.style.opacity = 0; hintRight.style.opacity = 0;
+    }
+  }
+
+  card.addEventListener('touchstart', function(e) { var t = e.touches[0]; onStart(t.clientX, t.clientY); }, { passive: true });
+  card.addEventListener('touchmove', function(e) { var t = e.touches[0]; onMove(t.clientX, t.clientY); }, { passive: true });
+  card.addEventListener('touchend', onEnd);
+  card.addEventListener('touchcancel', onEnd);
+  card.addEventListener('mousedown', function(e) { e.preventDefault(); onStart(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', onEnd);
+}
+</script>
+</body>
+</html>
