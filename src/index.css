@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background-color: #0f0c1a;
+  color: #f5efe0;
+  touch-action: pan-y;
+}
+
+/* Card swipe styles */
+.swipe-card {
+  will-change: transform;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.swipe-card:active {
+  cursor: grabbing;
+}
+
+.swipe-card.is-leaving {
+  pointer-events: none;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #f5a623, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card shimmer loading */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #1e1830 25%, #2a2445 50%, #1e1830 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Swipe indicator */
+.swipe-indicator-a {
+  background: linear-gradient(135deg, #5acea0, #2ecc71);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.swipe-indicator-b {
+  background: linear-gradient(135deg, #e05a5a, #e74c3c);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+/* Scrollbar hide */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Result image */
+.result-image-container {
+  background: linear-gradient(135deg, #1e1830, #2d1b69);
+  border: 2px solid rgba(245, 166, 35, 0.3);
+}
+
+/* Typing animation for description */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

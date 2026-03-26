@@ -1,595 +1,585 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>MBTI おじさん診断</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>オジサンMBTI診断</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg: #0f1729;
-  --bg-card: #1a2340;
-  --accent: #6c63ff;
-  --accent-light: #8b83ff;
-  --accent-glow: rgba(108, 99, 255, 0.3);
-  --text: #e8e6f0;
-  --text-dim: #8a8a9a;
-  --choice-a: #4ecdc4;
-  --choice-b: #ff6b6b;
-  --radius: 16px;
-  --font: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-html, body {
-  height: 100%;
-  overflow: hidden;
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
-
-#app {
-  width: 100%; height: 100%;
-  max-width: 480px; margin: 0 auto;
-  position: relative; overflow: hidden;
-}
-
-.screen {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.4s ease;
-}
-.screen.active { opacity: 1; pointer-events: auto; }
-
-/* Start Screen */
-#start-screen {
-  justify-content: center; align-items: center;
-  text-align: center; padding: 2rem;
-  background: radial-gradient(ellipse at 50% 40%, rgba(108,99,255,0.15), transparent 70%);
-}
-.start-content { animation: fadeInUp 0.6s ease; }
-.logo { font-size: 5rem; margin-bottom: 1rem; filter: drop-shadow(0 0 20px var(--accent-glow)); }
-h1 {
-  font-size: 1.8rem; font-weight: 900; margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, var(--accent-light), var(--choice-a));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.subtitle { font-size: 0.95rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 1.5rem; }
-.time-badge {
-  display: inline-block; background: rgba(108,99,255,0.15);
-  border: 1px solid rgba(108,99,255,0.3); border-radius: 20px;
-  padding: 0.4rem 1.2rem; font-size: 0.85rem; color: var(--accent-light); margin-bottom: 2rem;
-}
-.btn-primary {
-  display: block; width: 100%; max-width: 280px; margin: 0 auto 1.5rem;
-  padding: 1rem 2rem; font-size: 1.1rem; font-weight: 700; font-family: var(--font);
-  color: #fff; background: linear-gradient(135deg, var(--accent), #8b5cf6);
-  border: none; border-radius: 50px; cursor: pointer;
-  box-shadow: 0 4px 20px var(--accent-glow); transition: transform 0.2s;
-}
-.btn-primary:active { transform: scale(0.96); }
-.hint { font-size: 0.75rem; color: var(--text-dim); }
-
-/* Quiz Screen */
-#quiz-screen { padding: 1rem 1rem 0; }
-
-#progress-bar { padding: 0.5rem 0 1rem; }
-.progress-slots { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem; }
-.progress-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.slot-pair {
-  display: flex; flex-direction: column; align-items: center; gap: 1px;
-  font-size: 0.65rem; color: var(--text-dim); font-weight: 500;
-}
-.slot-pair span { transition: all 0.3s ease; }
-.slot-pair span.confirmed {
-  font-size: 1.1rem; font-weight: 900; color: var(--accent-light);
-  text-shadow: 0 0 10px var(--accent-glow);
-}
-.slot-pair span.dimmed { opacity: 0.3; font-size: 0.55rem; }
-.slot-divider { color: var(--text-dim); opacity: 0.3; font-size: 0.6rem; align-self: center; }
-.progress-track {
-  width: 100%; height: 4px; background: rgba(255,255,255,0.08);
-  border-radius: 2px; overflow: hidden;
-}
-.progress-fill {
-  height: 100%; width: 0%;
-  background: linear-gradient(90deg, var(--accent), var(--choice-a));
-  border-radius: 2px; transition: width 0.4s ease;
-}
-
-/* Card */
-#card-container {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  perspective: 1000px; padding: 0.5rem 0; min-height: 0;
-}
-.card {
-  position: relative; width: 100%; max-width: 380px;
-  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: var(--radius); padding: 2.5rem 1.5rem; text-align: center;
-  cursor: grab; touch-action: pan-y; will-change: transform;
-}
-.card:active { cursor: grabbing; }
-.card.swiping { transition: none !important; }
-.card.animate-out { transition: transform 0.35s ease, opacity 0.35s ease; }
-.card-label {
-  font-size: 0.75rem; font-weight: 700; color: var(--accent-light);
-  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.5rem;
-}
-.card-question { font-size: 1.2rem; font-weight: 700; line-height: 1.6; }
-.swipe-hint {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  font-size: 1.5rem; font-weight: 900; opacity: 0;
-  transition: opacity 0.15s; pointer-events: none;
-}
-.swipe-hint-left { left: 1rem; color: var(--choice-b); }
-.swipe-hint-right { right: 1rem; color: var(--choice-a); }
-
-/* Choice Buttons */
-.choice-buttons { display: flex; gap: 0.75rem; padding: 1rem 0 2rem; }
-.btn-choice {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
-  padding: 0.8rem 0.5rem; font-family: var(--font);
-  border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
-  cursor: pointer; transition: transform 0.15s, background 0.15s, border-color 0.15s;
-  background: var(--bg-card);
-}
-.btn-choice:active { transform: scale(0.96); }
-.btn-a { color: var(--choice-a); }
-.btn-a:hover, .btn-a:active { background: rgba(78,205,196,0.1); border-color: rgba(78,205,196,0.3); }
-.btn-b { color: var(--choice-b); }
-.btn-b:hover, .btn-b:active { background: rgba(255,107,107,0.1); border-color: rgba(255,107,107,0.3); }
-.choice-label { font-size: 1rem; font-weight: 900; }
-.choice-text {
-  font-size: 0.7rem; font-weight: 500; line-height: 1.4; color: var(--text-dim);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-
-/* Result Screen */
-#result-screen {
-  overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 2rem 1.5rem;
-  background: radial-gradient(ellipse at 50% 20%, rgba(108,99,255,0.12), transparent 60%);
-}
-.result-content { animation: fadeInUp 0.6s ease; }
-.result-type-code {
-  text-align: center; font-size: 2.4rem; font-weight: 900; letter-spacing: 0.08em;
-  background: linear-gradient(135deg, var(--accent-light), var(--choice-a));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  margin-bottom: 0.5rem;
-}
-.result-catchphrase {
-  text-align: center; font-size: 1.1rem; font-weight: 700; margin-bottom: 2rem;
-}
-
-.ojisan-card {
-  position: relative; width: 100%; aspect-ratio: 16 / 9;
-  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: var(--radius); overflow: hidden; margin-bottom: 2rem;
-  display: flex; align-items: center; justify-content: center;
-}
-.ojisan-placeholder {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 0.75rem; padding: 1.5rem; text-align: center;
-}
-.ojisan-emoji { font-size: 4rem; }
-.ojisan-prompt-label {
-  font-size: 0.65rem; font-weight: 700; color: var(--accent-light);
-  letter-spacing: 0.1em; text-transform: uppercase;
-}
-.ojisan-prompt-text {
-  font-size: 0.65rem; color: var(--text-dim); line-height: 1.5;
-  max-height: 4.5em; overflow: hidden;
-}
-
-.result-description {
-  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem;
-}
-.result-description h3 {
-  font-size: 0.8rem; font-weight: 700; color: var(--accent-light);
-  margin-bottom: 0.75rem; letter-spacing: 0.05em;
-}
-.result-description p { font-size: 0.9rem; line-height: 1.8; }
-
-.spectrum-breakdown { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 2rem; }
-.spectrum-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; }
-.spectrum-label-left, .spectrum-label-right { width: 2rem; font-weight: 700; text-align: center; }
-.spectrum-label-left { color: var(--choice-a); }
-.spectrum-label-right { color: var(--choice-b); }
-.spectrum-bar-track {
-  flex: 1; height: 6px; background: rgba(255,255,255,0.06);
-  border-radius: 3px; position: relative; overflow: hidden;
-}
-.spectrum-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
-.spectrum-bar-fill.left { background: var(--choice-a); }
-.spectrum-bar-fill.right { background: var(--choice-b); margin-left: auto; }
-.spectrum-confirmed {
-  font-size: 0.75rem; font-weight: 900; color: var(--accent-light); width: 1.2rem; text-align: center;
-}
-
-.btn-retry {
-  display: block; width: 100%; padding: 1rem; font-size: 1rem; font-weight: 700;
-  font-family: var(--font); color: var(--accent-light);
-  background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.3);
-  border-radius: 50px; cursor: pointer; transition: transform 0.2s; margin-bottom: 2rem;
-}
-.btn-retry:active { transform: scale(0.96); background: rgba(108,99,255,0.2); }
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.card-enter { animation: cardEnter 0.3s ease; }
-@keyframes cardEnter {
-  from { opacity: 0; transform: scale(0.9) translateY(20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-.spectrum-confirmed-flash { animation: confirmedFlash 0.5s ease; }
-@keyframes confirmedFlash {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.4); filter: brightness(1.5); }
-  100% { transform: scale(1); }
-}
-
-@media (max-height: 667px) {
-  .card { padding: 1.5rem 1.2rem; }
-  .card-question { font-size: 1.05rem; }
-  .choice-buttons { padding: 0.5rem 0 1.5rem; }
-}
-@media (min-width: 481px) {
-  #app { border-left: 1px solid rgba(255,255,255,0.04); border-right: 1px solid rgba(255,255,255,0.04); }
-}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body,#root{height:100%;margin:0;padding:0}
+    body{font-family:'Noto Sans JP',sans-serif;background:#0f0c1a;color:#f5efe0;overscroll-behavior:none}
+    .gradient-text{background:linear-gradient(135deg,#f5a623,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .swipe-card{will-change:transform;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+    .swipe-card:active{cursor:grabbing}
+    .no-scrollbar::-webkit-scrollbar{display:none}
+    .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+    @keyframes slide-up{0%{transform:translateY(50px);opacity:0}100%{transform:translateY(0);opacity:1}}
+    @keyframes fade-in{0%{opacity:0}100%{opacity:1}}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    .anim-slide-up{animation:slide-up .5s ease-out forwards}
+    .anim-fade-in{animation:fade-in .4s ease-out forwards}
+    .anim-float{animation:float 3s ease-in-out infinite}
   </style>
 </head>
 <body>
-  <div id="app">
-    <div id="start-screen" class="screen active">
-      <div class="start-content">
-        <div class="logo">&#x1F9D4;</div>
-        <h1>おじさん MBTI 診断</h1>
-        <p class="subtitle">あなたはどんな性格タイプの<br>「おじさん」カナ？</p>
-        <p class="time-badge">&#x26A1; 約60秒で完了</p>
-        <button id="start-btn" class="btn-primary">診断スタート</button>
-        <p class="hint">カードを左右にスワイプ、またはボタンをタップ</p>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback} = React;
+
+// ── DATA ─────────────────────────────────────────────────────────────────────
+
+const SPECTRUMS = ['EI','SN','TF','JP','AT'];
+const SPECTRUM_META = {
+  EI:{label:'外向 / 内向',     icon:'🍺',color:'#f5a623'},
+  SN:{label:'感覚 / 直感',     icon:'📊',color:'#5acea0'},
+  TF:{label:'思考 / 感情',     icon:'🧠',color:'#a78bfa'},
+  JP:{label:'判断 / 知覚',     icon:'📅',color:'#60a5fa'},
+  AT:{label:'自己確信 / 慎重', icon:'💪',color:'#f472b6'},
+};
+
+const QUESTIONS = {
+  EI:[
+    {id:'EI-1',text:'休日の過ごし方といえば？',
+     optionA:{text:'仲間とゴルフや飲み会に出かけてワイワイやる',type:'E'},
+     optionB:{text:'家でゴロゴロするか、一人で趣味（釣りやDIYなど）に没頭する',type:'I'}},
+    {id:'EI-2',text:'会社の飲み会でのポジションは？',
+     optionA:{text:'自分から話題を振って、場を盛り上げる若大将タイプ',type:'E'},
+     optionB:{text:'人の話をウンウンと聞いて、端っこで笑っている聞き役タイプ',type:'I'}},
+    {id:'EI-3',text:'クタクタに疲れた週末。どうやって回復する？',
+     optionA:{text:'外に出て、誰かとパーッと発散したい',type:'E'},
+     optionB:{text:'とにかく誰とも喋らず、一人になって静かに過ごしたい',type:'I'}},
+  ],
+  SN:[
+    {id:'SN-1',text:'部下からの報告。どう言われるのが一番しっくりくる？',
+     optionA:{text:'「事実」と「数字」を順序立ててキッチリ説明してほしい',type:'S'},
+     optionB:{text:'細かい数字より「要するにどうなるの？」という要点と見通しを先に知りたい',type:'N'}},
+    {id:'SN-2',text:'昔話や誰かのアドバイスを聞くとき、好きなのは？',
+     optionA:{text:'現場の汗水垂らした「実体験」に基づく、リアルな苦労話',type:'S'},
+     optionB:{text:'「要するにプロ野球で言えばさ…」みたいな、本質を突いたうまい例え話',type:'N'}},
+    {id:'SN-3',text:'新しい家電や車を買うときの決め手は？',
+     optionA:{text:'カタログのスペックや実物を見て、確実な「機能」で選ぶ',type:'S'},
+     optionB:{text:'「これで週末のドライブが最高になるぞ」という「イメージや直感」で選ぶ',type:'N'}},
+  ],
+  TF:[
+    {id:'TF-1',text:'部下が仕事で大きなミスをした！あなたの第一声は？',
+     optionA:{text:'「なぜ起きた？次はどうする？」と原因と対策を理詰めで問いただす',type:'T'},
+     optionB:{text:'「悪気はなかったんだろ」と、まずは本人の言い分や気持ちを聞いてやる',type:'F'}},
+    {id:'TF-2',text:'会議で意見が真っ二つに割れた時、どう着地させる？',
+     optionA:{text:'多少カドが立っても、スジが通っている「正論」を優先すべきだ',type:'T'},
+     optionB:{text:'正論であっても、みんなの「納得感」や「波風を立てないこと」が一番大事だ',type:'F'}},
+    {id:'TF-3',text:'テレビドラマや映画を見るならどっち？',
+     optionA:{text:'伏線がキッチリ回収される、筋の通ったサスペンスや歴史ものが好きだ',type:'T'},
+     optionB:{text:'不器用な男の生き様や、人情・家族の絆にホロリと泣けるヒューマンドラマが好きだ',type:'F'}},
+  ],
+  JP:[
+    {id:'JP-1',text:'出張や家族旅行の準備、どうしてる？',
+     optionA:{text:'前日までにキッチリ荷造りし、予定通りに動きたい',type:'J'},
+     optionB:{text:'当日の朝にバタバタ準備し、行き当たりばったりのトラブルも楽しむ',type:'P'}},
+    {id:'JP-2',text:'仕事の進め方（納期があるもの）は？',
+     optionA:{text:'期限から逆算して、毎日コツコツ計画通りに進めないと落ち着かない',type:'J'},
+     optionB:{text:'ギリギリまで粘って、土壇場の集中力で一気に仕上げるのが俺のやり方だ',type:'P'}},
+    {id:'JP-3',text:'休日に「急な予定変更」が入った時の気分は？',
+     optionA:{text:'せっかくのペースが乱されて、正直イライラする',type:'J'},
+     optionB:{text:'「まあ、そういうこともあるか」と、その場のノリで臨機応変に楽しめる',type:'P'}},
+  ],
+  AT:[
+    {id:'AT-1',text:'上司や顧客から、理不尽なくらいキツく怒られた日の夜は？',
+     optionA:{text:'「まあしゃあない、酒飲んで寝よう」と翌日にはケロッと切り替えられる',type:'A'},
+     optionB:{text:'「あんな言い方しなくても…」と、風呂の中でも一人で悶々と反省会をしてしまう',type:'T'}},
+    {id:'AT-2',text:'自分の「過去の決断（仕事や人生）」についてどう思う？',
+     optionA:{text:'「あの時の俺の判断は間違ってなかった」とドッシリ構えている',type:'A'},
+     optionB:{text:'「もっと違うやり方があったんじゃないか…」と時々不安になる',type:'T'}},
+    {id:'AT-3',text:'生意気な若手から「そのやり方、古くないですか？」と痛いところを突かれたら？',
+     optionA:{text:'「そういう見方もあるか」と軽く受け流せる',type:'A'},
+     optionB:{text:'気にしてないフリをするが、内心かなり傷ついて数日引きずる',type:'T'}},
+  ],
+};
+
+const COMPATIBILITY = {
+  INTJ:{good:['ENFP','ENTP'],bad:['ESFJ','ISFJ','ESFP','ISFP']},
+  INTP:{good:['ENFJ','ENTJ'],bad:['ESFJ','ISFJ','ESFP','ISFP']},
+  ENTJ:{good:['INFP','INTP'],bad:['ISFJ','ESFJ','ISFP','ESFP']},
+  ENTP:{good:['INFJ','INTJ'],bad:['ISFJ','ESFJ','ISFP','ESFP']},
+  INFJ:{good:['ENFP','ENTP'],bad:['ESTP','ISTP','ESFP','ISFP']},
+  INFP:{good:['ENFJ','ENTJ'],bad:['ESTP','ISTP','ESFP','ISFP']},
+  ENFJ:{good:['INFP','INTP'],bad:['ISTP','ESTP','ISFP','ESFP']},
+  ENFP:{good:['INFJ','INTJ'],bad:['ISTP','ESTP','ISFP','ESFP']},
+  ISTJ:{good:['ESFP','ESTP'],bad:['ENFP','ENTP','INFJ','INFP']},
+  ISFJ:{good:['ESFP','ESTP'],bad:['ENFP','ENTP','INFJ','INFP']},
+  ESTJ:{good:['ISFP','ISTP'],bad:['INFP','ENFJ','INFJ','ENFP']},
+  ESFJ:{good:['ISFP','ISTP'],bad:['INFP','ENFJ','INFJ','ENFP']},
+  ISTP:{good:['ESFJ','ESTJ'],bad:['ENFJ','ENFP','INFJ','INFP']},
+  ISFP:{good:['ESFJ','ESTJ'],bad:['ENFJ','ENFP','INFJ','INFP']},
+  ESTP:{good:['ISFJ','ISTJ'],bad:['INFJ','INFP','ENFJ','ENFP']},
+  ESFP:{good:['ISFJ','ISTJ'],bad:['INFJ','INFP','ENFJ','ENFP']},
+};
+
+const MBTI_TYPES = {
+  INTJ:{name:'冷静な戦略家',nick:'孤高の設計者オジサン',color:'#6366f1',emoji:'🧊',bg:'#1a1060',
+    desc:'緻密な計画と長期的なビジョンで組織を動かす孤高のストラテジスト。感情より論理、根回しより実力。「俺の構想は5年先を見ている」が口癖。',
+    vA:'揺るぎない自信で自分の戦略を押し通す鉄壁の論客。',vT:'完璧主義が高じて、深夜まで資料を見直す自己要求型の論客。'},
+  INTP:{name:'孤独な理論家',nick:'謎めいた研究者オジサン',color:'#8b5cf6',emoji:'🔬',bg:'#1e0a4a',
+    desc:'複雑な問題をひとりで解体し、独自理論を組み上げる知の求道者。会議では無言でも、退社後の居酒屋で突然熱弁をふるう。「要するにだな…」',
+    vA:'マイペースに自説を展開し、批判されてもブレない論客。',vT:'自分の理論の穴が気になって夜眠れない完璧主義者。'},
+  ENTJ:{name:'剛腕の指揮官',nick:'天下取りの親分オジサン',color:'#dc2626',emoji:'👑',bg:'#3a0a0a',
+    desc:'目標に向かって組織全体を引っ張る生粋のリーダー。無駄を嫌い、意思決定が爆速。「グダグダ言うな、やれ！」の一言で会議を終わらせる。',
+    vA:'圧倒的な自信で前に突き進む最強の経営者気質。',vT:'勝ちへの執着が強すぎて、時に己のプレッシャーに押しつぶされる。'},
+  ENTP:{name:'口達者な討論者',nick:'アイデア無双の議論王オジサン',color:'#f59e0b',emoji:'🎙️',bg:'#3a2000',
+    desc:'奇想天外なアイデアと弁舌で場を席巻する永遠の反骨者。反論することが生きがい。会議でちゃぶ台をひっくり返してから「面白いな、これ」と笑う。',
+    vA:'論破することに喜びを感じる無敵の論客。',vT:'アイデアが多すぎて、どれに集中すべきか迷い続ける。'},
+  INFJ:{name:'静かな予言者',nick:'人の心を読む哲学者オジサン',color:'#0891b2',emoji:'🕯️',bg:'#001f2e',
+    desc:'深い洞察と強い信念で社会を変えようとする静かな革命家。口数は少ないが一言一言が重い。数年後に「あの時の彼の言葉は正しかった」と言われるタイプ。',
+    vA:'自分のビジョンへの確信が強く、孤独をいとわない。',vT:'人の感情に敏感すぎて、疲弊してしまうことがある。'},
+  INFP:{name:'夢見る仲介者',nick:'不器用な理想主義者オジサン',color:'#10b981',emoji:'🌅',bg:'#002218',
+    desc:'強い価値観と豊かな感受性を持つ、心の中に宇宙を抱えたロマンチスト。外見はむっつりしているが、内面では熱い物語が進行中。懐かしのフォークソングで泣く。',
+    vA:'自分の価値観への確信があり、ブレない芯を持つ。',vT:'理想と現実のギャップに悩み続ける繊細な魂。'},
+  ENFJ:{name:'熱血の主人公',nick:'面倒見すぎの親分オジサン',color:'#f97316',emoji:'🤝',bg:'#2a1000',
+    desc:'人を動かすカリスマと温かさを持つ、生きる人情ドラマの主人公。後輩の相談には深夜でも付き合う。部下の誕生日は全員分覚えている。',
+    vA:'揺るぎない自信で人を引きつけ、常に前向きなムードメーカー。',vT:'他者の期待に応えようとしすぎて、自分を追い詰めることがある。'},
+  ENFP:{name:'自由な広報屋',nick:'エネルギー全開の炎上商人オジサン',color:'#ec4899',emoji:'🎆',bg:'#2a0018',
+    desc:'情熱と創造性を爆発させながら生きる永遠の青春組。アイデアが止まらず、会議を脱線させる天才。定年後も「俺にはまだ夢がある」と新事業を構想する。',
+    vA:'根拠なき自信で無謀な挑戦を続けるポジティブモンスター。',vT:'熱しやすく冷めやすく、次の夢を追いかけ続けて落ち着かない。'},
+  ISTJ:{name:'堅牢な管理者',nick:'ルール絶対の石頭オジサン',color:'#64748b',emoji:'📋',bg:'#0f1520',
+    desc:'伝統と規律を重んじ、組織の土台を支える岩盤のような存在。「昔からこうしてきた」が正義。地味だが絶対に仕事をミスしない信頼の大黒柱。',
+    vA:'自分のやり方に絶対の自信を持つ頑固な職人気質。',vT:'完璧主義が過ぎて、手順から少しでもズレると心が乱れる。'},
+  ISFJ:{name:'献身の守護者',nick:'お人好しすぎる縁の下オジサン',color:'#22c55e',emoji:'🌿',bg:'#001a08',
+    desc:'他人のために黙々と働く縁の下の力持ち。自分のことは後回しにして周りを支える。定年退職の日、大量の花束と涙で見送られるタイプ。',
+    vA:'安定した自己肯定感で、誰からも愛される穏やかな存在。',vT:'人の顔色を読みすぎて、NOと言えずにストレスをためがち。'},
+  ESTJ:{name:'鉄の幹部',nick:'叩き上げの現場主義オジサン',color:'#b45309',emoji:'🏗️',bg:'#251000',
+    desc:'秩序と効率を愛する、組織の骨格を作る男。「やると言ったらやる」が信条の有言実行タイプ。会議の進行管理と根回しは天下一品。',
+    vA:'圧倒的な実行力と自信で、組織を力技で回す。',vT:'完璧な計画が崩れると不機嫌になる几帳面な管理者。'},
+  ESFJ:{name:'社交の領事',nick:'気遣いの帝王・宴会部長オジサン',color:'#d97706',emoji:'🍖',bg:'#201000',
+    desc:'人間関係の達人。飲み会の幹事は当然、他人の悩みを聞きながら自分も楽しむ宴会部長。「みんなが笑顔なら俺は幸せだ」が本心。',
+    vA:'天性の社交力で、どこへ行っても中心人物になる陽のオジサン。',vT:'周りから嫌われることへの恐怖が、行動の原動力になっている。'},
+  ISTP:{name:'無口な巨匠',nick:'無骨な職人肌オジサン',color:'#78716c',emoji:'🔧',bg:'#1a1510',
+    desc:'クールな分析眼と器用な手先を持つ、無口な職人。理屈より体験、会議より現場。愛車とバイクの整備が最高の癒し。余計なことは言わないが、いざとなれば誰より頼れる。',
+    vA:'自分のペースを乱されないタフな精神力の持ち主。',vT:'自分のスキルや判断に自信が持てず、一人でひっそり悩む。'},
+  ISFP:{name:'自由な冒険者',nick:'感性だけで生きてきたオジサン',color:'#14b8a6',emoji:'📷',bg:'#001f1c',
+    desc:'豊かな感性と独自の美意識で生きる、型にはまらない自由人。写真、音楽、旅が友達。肩書きより「今この瞬間を楽しめているか」を大事にする。',
+    vA:'自分の感覚への絶対の自信で、批判をさらりとかわす。',vT:'他者の評価に一喜一憂し、深く傷ついてしまうこともある。'},
+  ESTP:{name:'大胆な起業家',nick:'リスクを楽しむ修羅場経験者オジサン',color:'#ef4444',emoji:'🃏',bg:'#2a0000',
+    desc:'ノリと度胸で修羅場を切り抜けてきた、行動の人。考えるより先に動き、結果を出す。「細かいことは後でいい、まず動け！」がモットーの逞しいオジサン。',
+    vA:'修羅場を「面白い」と笑えるメンタルの鬼。',vT:'スリルを求めながらも、結果への不安がチラつく。'},
+  ESFP:{name:'舞台の主役',nick:'ムード全振りのカラオケ王オジサン',color:'#f43f5e',emoji:'🎤',bg:'#2a0010',
+    desc:'場の空気をパッと明るくする生きるエンターテイナー。カラオケは十八番を3曲持つプロ。人生を「楽しんだもん勝ち」と本気で思っている。みんなのアイドル。',
+    vA:'常に前向きで、落ち込んでも次の瞬間には復活する不死鳥。',vT:'注目されていない時間が不安で、常に誰かの視線を求めてしまう。'},
+};
+
+// ── HOOK ─────────────────────────────────────────────────────────────────────
+
+function useAdaptiveMBTI() {
+  const [si,setSi]=useState(0), [qi,setQi]=useState(0);
+  const [ans,setAns]=useState({EI:[],SN:[],TF:[],JP:[],AT:[]});
+  const [confirmed,setConfirmed]=useState({});
+  const [finalType,setFinalType]=useState(null);
+  const [done,setDone]=useState(false);
+
+  const spectrum=SPECTRUMS[si];
+  const question=done?null:QUESTIONS[spectrum]?.[qi];
+
+  const advance=useCallback((type,newConf)=>{
+    const next=si+1;
+    if(next>=SPECTRUMS.length){
+      setFinalType(`${newConf.EI}${newConf.SN}${newConf.TF}${newConf.JP}-${newConf.AT}`);
+      setDone(true);
+    } else { setSi(next); setQi(0); }
+  },[si]);
+
+  const handleAnswer=useCallback((ab)=>{
+    const q=QUESTIONS[spectrum][qi];
+    const t=ab==='A'?q.optionA.type:q.optionB.type;
+    const prev=ans[spectrum]||[];
+    const next=[...prev,t];
+    setAns(a=>({...a,[spectrum]:next}));
+    if(qi===0){setQi(1);return;}
+    if(qi===1){
+      if(next[0]===next[1]){const c={...confirmed,[spectrum]:next[0]};setConfirmed(c);advance(next[0],c);}
+      else setQi(2);
+      return;
+    }
+    const cnt=next.filter(x=>x===next[0]).length;
+    const winner=cnt>=2?next[0]:next[1];
+    const c={...confirmed,[spectrum]:winner};setConfirmed(c);advance(winner,c);
+  },[spectrum,qi,ans,confirmed,advance]);
+
+  const reset=useCallback(()=>{
+    setSi(0);setQi(0);setAns({EI:[],SN:[],TF:[],JP:[],AT:[]});
+    setConfirmed({});setFinalType(null);setDone(false);
+  },[]);
+
+  return {spectrum,question,qi,si,confirmed,done,finalType,handleAnswer,reset};
+}
+
+// ── PROGRESS BAR ─────────────────────────────────────────────────────────────
+
+function ProgressBar({si,qi,confirmed}){
+  return(
+    <div style={{padding:'14px 16px 6px',flexShrink:0}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+        {SPECTRUMS.map((s,i)=>{
+          const done=confirmed[s]!==undefined;
+          const active=i===si&&!done;
+          const m=SPECTRUM_META[s];
+          return(
+            <React.Fragment key={s}>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+                <div style={{width:30,height:30,borderRadius:'50%',display:'flex',alignItems:'center',
+                  justifyContent:'center',fontSize:13,fontWeight:900,transition:'all .3s',
+                  background:done?m.color:active?`${m.color}33`:'rgba(255,255,255,0.05)',
+                  border:active?`2px solid ${m.color}`:done?'none':'2px solid rgba(255,255,255,0.1)',
+                  transform:active?'scale(1.15)':'scale(1)',
+                  boxShadow:active?`0 0 10px ${m.color}88`:'none',
+                  color:done?'#fff':active?m.color:'#4b5563'}}>
+                  {done?'✓':m.icon}
+                </div>
+                <span style={{fontSize:9,marginTop:2,fontWeight:700,
+                  color:active?m.color:done?m.color:'#4b5563'}}>{s}</span>
+              </div>
+              {i<4&&<div style={{flex:1,height:2,margin:'0 3px',
+                background:i<si?SPECTRUM_META[SPECTRUMS[i]].color:'rgba(255,255,255,0.1)',
+                transition:'background .3s'}}/>}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div style={{textAlign:'center',fontSize:11,color:'#6b7280'}}>
+        {SPECTRUM_META[SPECTRUMS[si]]?.label} — Q{qi+1}
       </div>
     </div>
+  );
+}
 
-    <div id="quiz-screen" class="screen">
-      <div id="progress-bar">
-        <div class="progress-slots" id="progress-slots"></div>
-        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-      </div>
-      <div id="card-container">
-        <div id="card" class="card">
-          <div class="card-label" id="card-label"></div>
-          <p class="card-question" id="card-question"></p>
-          <div class="swipe-hint swipe-hint-left" id="hint-left">&larr; B</div>
-          <div class="swipe-hint swipe-hint-right" id="hint-right">A &rarr;</div>
+// ── QUESTION CARD ─────────────────────────────────────────────────────────────
+
+const SWIPE_THRESHOLD=85;
+
+function QuestionCard({question,spectrum,onAnswer}){
+  const [offset,setOffset]=useState({x:0,y:0});
+  const [drag,setDrag]=useState(false);
+  const [leaving,setLeaving]=useState(null);
+  const start=useRef({x:0,y:0});
+  const m=SPECTRUM_META[spectrum];
+
+  const pd=(cx,cy)=>{setDrag(true);start.current={x:cx,y:cy};};
+  const pm=(cx,cy)=>{if(!drag)return;setOffset({x:cx-start.current.x,y:(cy-start.current.y)*.25});};
+
+  const trigger=useCallback((ab)=>{
+    if(leaving)return;
+    setLeaving(ab);
+    setTimeout(()=>{setOffset({x:0,y:0});setLeaving(null);onAnswer(ab);},360);
+  },[leaving,onAnswer]);
+
+  const pu=useCallback(()=>{
+    if(!drag)return;
+    setDrag(false);
+    if(offset.x>SWIPE_THRESHOLD)trigger('A');
+    else if(offset.x<-SWIPE_THRESHOLD)trigger('B');
+    else setOffset({x:0,y:0});
+  },[drag,offset.x,trigger]);
+
+  const rot=offset.x*.07;
+  const aOp=Math.min(1,Math.max(0,offset.x/SWIPE_THRESHOLD));
+  const bOp=Math.min(1,Math.max(0,-offset.x/SWIPE_THRESHOLD));
+
+  let cs={transform:`translate(${offset.x}px,${offset.y}px) rotate(${rot}deg)`,
+    transition:drag?'none':'transform .28s cubic-bezier(.34,1.56,.64,1)'};
+  if(leaving==='A') cs={transform:'translate(130%,-20px) rotate(25deg)',opacity:0,
+    transition:'transform .36s ease-in,opacity .36s ease-in',pointerEvents:'none'};
+  if(leaving==='B') cs={transform:'translate(-130%,-20px) rotate(-25deg)',opacity:0,
+    transition:'transform .36s ease-in,opacity .36s ease-in',pointerEvents:'none'};
+
+  if(!question)return null;
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',
+      justifyContent:'center',padding:'0 16px 16px',minHeight:0}}>
+      <div className="swipe-card" style={{width:'100%',maxWidth:380,...cs}}
+        onMouseDown={e=>pd(e.clientX,e.clientY)}
+        onMouseMove={e=>{if(drag)pm(e.clientX,e.clientY);}}
+        onMouseUp={pu} onMouseLeave={pu}
+        onTouchStart={e=>pd(e.touches[0].clientX,e.touches[0].clientY)}
+        onTouchMove={e=>{e.preventDefault();pm(e.touches[0].clientX,e.touches[0].clientY);}}
+        onTouchEnd={pu}>
+        {/* A indicator */}
+        <div style={{position:'absolute',top:12,left:12,zIndex:20,padding:'4px 10px',borderRadius:20,
+          background:'linear-gradient(135deg,#5acea0,#2ecc71)',color:'#fff',fontSize:13,fontWeight:900,
+          opacity:aOp,transform:`scale(${.8+aOp*.2})`,border:'2px solid rgba(255,255,255,.3)',transition:'none'}}>A ✓</div>
+        {/* B indicator */}
+        <div style={{position:'absolute',top:12,right:12,zIndex:20,padding:'4px 10px',borderRadius:20,
+          background:'linear-gradient(135deg,#e05a5a,#e74c3c)',color:'#fff',fontSize:13,fontWeight:900,
+          opacity:bOp,transform:`scale(${.8+bOp*.2})`,border:'2px solid rgba(255,255,255,.3)',transition:'none'}}>B ✓</div>
+        {/* Card */}
+        <div style={{borderRadius:24,padding:'22px 20px 18px',
+          background:'linear-gradient(135deg,#1e1830,#2d1b50)',
+          border:`1.5px solid ${m.color}44`,
+          boxShadow:`0 20px 60px rgba(0,0,0,.6),0 0 30px ${m.color}22`,minHeight:210}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:6,borderRadius:20,padding:'4px 12px',
+            background:`${m.color}22`,color:m.color,border:`1px solid ${m.color}44`,
+            fontSize:12,fontWeight:700,marginBottom:14}}>
+            <span>{m.icon}</span><span>{m.label}</span>
+          </div>
+          <p style={{color:'#f5efe0',fontSize:18,fontWeight:700,lineHeight:1.55,marginBottom:16}}>{question.text}</p>
+          <div style={{height:1,background:`linear-gradient(90deg,transparent,${m.color}55,transparent)`,marginBottom:10}}/>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:'#6b7280',fontWeight:600}}>
+            <span>← B を選ぶ</span><span>A を選ぶ →</span>
+          </div>
         </div>
       </div>
-      <div class="choice-buttons">
-        <button class="btn-choice btn-b" id="btn-b">
-          <span class="choice-label">B</span>
-          <span class="choice-text" id="choice-b-text"></span>
+
+      {/* Answer buttons */}
+      <div style={{width:'100%',maxWidth:380,marginTop:12,display:'flex',flexDirection:'column',gap:10}}>
+        <button onClick={()=>trigger('A')} disabled={!!leaving}
+          style={{width:'100%',textAlign:'left',padding:'13px 16px',borderRadius:18,fontSize:13,
+            fontWeight:500,lineHeight:1.45,background:'rgba(90,206,160,.08)',
+            border:'1.5px solid rgba(90,206,160,.3)',color:'#e2fef5',cursor:'pointer'}}>
+          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',
+            width:22,height:22,borderRadius:'50%',fontSize:11,fontWeight:900,
+            marginRight:8,flexShrink:0,background:'rgba(90,206,160,.25)',color:'#5acea0'}}>A</span>
+          {question.optionA.text}
         </button>
-        <button class="btn-choice btn-a" id="btn-a">
-          <span class="choice-label">A</span>
-          <span class="choice-text" id="choice-a-text"></span>
+        <button onClick={()=>trigger('B')} disabled={!!leaving}
+          style={{width:'100%',textAlign:'left',padding:'13px 16px',borderRadius:18,fontSize:13,
+            fontWeight:500,lineHeight:1.45,background:'rgba(224,90,90,.08)',
+            border:'1.5px solid rgba(224,90,90,.3)',color:'#fee2e2',cursor:'pointer'}}>
+          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',
+            width:22,height:22,borderRadius:'50%',fontSize:11,fontWeight:900,
+            marginRight:8,flexShrink:0,background:'rgba(224,90,90,.25)',color:'#e05a5a'}}>B</span>
+          {question.optionB.text}
         </button>
       </div>
     </div>
+  );
+}
 
-    <div id="result-screen" class="screen">
-      <div class="result-content" id="result-content"></div>
+// ── RESULT SCREEN ─────────────────────────────────────────────────────────────
+
+function TypeBadge({type}){
+  const d=MBTI_TYPES[type];
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderRadius:12,
+      background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.1)'}}>
+      <span style={{fontSize:16}}>{d?.emoji||'👤'}</span>
+      <div>
+        <div style={{fontSize:11,fontWeight:900,color:d?.color||'#aaa'}}>{type}</div>
+        <div style={{fontSize:10,color:'#9ca3af',lineHeight:1.2}}>{d?.name||''}</div>
+      </div>
     </div>
-  </div>
-
-<script>
-// === DATA ===
-const spectrums = [
-  {
-    id: 'EI', labels: ['E', 'I'], fullLabels: ['Extraversion', 'Introversion'],
-    questions: [
-      { text: '社交的なイベントの後…', a: 'エネルギーが湧いてくる', b: '一人で静かに過ごしたくなる' },
-      { text: 'グループの中では…', a: '話す側になることが多い', b: '聞く側になることが多い' },
-      { text: '新しい環境に入ると…', a: 'すぐに人に話しかける', b: 'まず周りを観察する' },
-    ],
-  },
-  {
-    id: 'SN', labels: ['S', 'N'], fullLabels: ['Sensing', 'Intuition'],
-    questions: [
-      { text: '何かを学ぶとき…', a: '具体的・実践的な例を重視する', b: '未来の可能性や抽象的な概念を重視する' },
-      { text: '問題を解くとき…', a: '過去の経験やデータに頼る', b: '直感やひらめきに頼る' },
-      { text: '説明を受けるとき好むのは…', a: 'ステップバイステップの詳細', b: '全体像とビジョン' },
-    ],
-  },
-  {
-    id: 'TF', labels: ['T', 'F'], fullLabels: ['Thinking', 'Feeling'],
-    questions: [
-      { text: '友人が悩んでいるとき…', a: '論理的な解決策を提案する', b: '共感して気持ちに寄り添う' },
-      { text: '重要な決断をするとき…', a: '客観的な事実と論理を優先する', b: '人への影響や価値観を優先する' },
-      { text: '議論の中で大切なのは…', a: '正しい結論に到達すること', b: '全員が納得できること' },
-    ],
-  },
-  {
-    id: 'JP', labels: ['J', 'P'], fullLabels: ['Judging', 'Perceiving'],
-    questions: [
-      { text: '週末の過ごし方は…', a: 'だいたいの予定を立てておく', b: 'その場のノリで決める' },
-      { text: '仕事のスタイルは…', a: '計画通りに進めるのが好き', b: '締め切り直前に集中して仕上げる' },
-      { text: '旅行の計画は…', a: '事前にしっかり調べて予約する', b: '現地で気ままに動く方が楽しい' },
-    ],
-  },
-  {
-    id: 'AT', labels: ['A', 'T'], fullLabels: ['Assertive', 'Turbulent'],
-    questions: [
-      { text: 'ミスをした後は…', a: 'すぐ切り替えて次に進む', b: '深く振り返り、何度も反芻する' },
-      { text: 'プレッシャーの中では…', a: '落ち着いて自分を信じられる', b: '不安が高まり、より慎重になる' },
-      { text: '他人の評価について…', a: 'あまり気にならない', b: 'つい気になってしまう' },
-    ],
-  },
-  {
-    id: 'HL', labels: ['H', 'L'], fullLabels: ['Harmony', 'Lone Wolf'],
-    questions: [
-      { text: 'プロジェクトの成功とは…', a: 'チームの調和と共有された目標の達成', b: '個人の専門性とユニークな価値の証明' },
-      { text: '理想の働き方は…', a: 'チームで協力しながら進める', b: '一人で集中して成果を出す' },
-      { text: '評価されたいのは…', a: 'チームへの貢献度', b: '個人としてのスキルや実績' },
-    ],
-  },
-];
-
-const typeResults = {
-  ISTJ: { catchphrase: '信念を守る静かなる番人', description: 'ISTJのおじさんは、誠実で責任感が強く、規律を重んじる。黙々と組織を支え、約束は必ず守る。変化よりも安定を好み、長年培った経験と知識でチームの土台を築く。', prompt: 'A serious, dependable middle-aged Japanese man in a crisp white shirt and reading glasses, meticulously organizing files in a well-ordered traditional office. Warm wood tones, neat bookshelves, a vintage desk lamp. Symbolizes reliability and duty. Detailed illustration, warm lighting. --ar 16:9 --v 6.0' },
-  ISFJ: { catchphrase: '皆を包む温もりの守護者', description: 'ISFJのおじさんは、控えめだが深い思いやりを持つ。周囲の人の小さな変化に気づき、さりげなくサポートする。伝統を大切にし、家族やチームのために献身的に働く。', prompt: 'A gentle, warm middle-aged Japanese man in a cozy knit sweater, carefully tending a small garden in the courtyard of a traditional Japanese home. Soft afternoon sunlight, blooming flowers, a cup of tea nearby. Symbolizes nurturing care. Watercolor style, gentle tones. --ar 16:9 --v 6.0' },
-  INFJ: { catchphrase: '理想を紡ぐ孤高の預言者', description: 'INFJのおじさんは、深い洞察力と理想主義を持つ。表面上は穏やかだが、内面には強い信念が燃えている。人の心の奥底を見抜き、静かに世界をより良くしようとする。', prompt: 'A contemplative middle-aged Japanese man with deep, knowing eyes, sitting in a dimly lit study surrounded by philosophy books and a single candle. Rain patters on the window. An old fountain pen rests on an open journal. Mystical, introspective atmosphere. Oil painting style. --ar 16:9 --v 6.0' },
-  INTJ: { catchphrase: '未来を設計する冷徹なる建築家', description: 'INTJのおじさんは、戦略的思考と独立心の塊。常に数手先を読み、非効率を嫌う。少数精鋭を好み、自分のビジョンを実現するために冷静かつ大胆に行動する。', prompt: 'A sharp, calculated middle-aged Japanese man with a neatly trimmed beard, in a dark minimalist suit, standing in a futuristic command center looking at transparent holographic schematics. Cold blue lighting, precise geometric patterns. High-tech atmosphere. --ar 16:9 --v 6.0' },
-  ISTP: { catchphrase: '沈黙の中で機械を操る職人', description: 'ISTPのおじさんは、寡黙だが手先が器用で実践的。問題が起きたとき、冷静に状況を分析し、最小限の力で最大の効果を出す。自由を愛し、束縛を嫌う。', prompt: 'A quiet, focused middle-aged Japanese man in a worn leather apron, working on a vintage motorcycle in a cluttered but organized garage. Oil-stained hands, tools hanging on pegboard walls. Golden hour light through dusty windows. Realistic, cinematic style. --ar 16:9 --v 6.0' },
-  ISFP: { catchphrase: '風に吹かれる自由な芸術家', description: 'ISFPのおじさんは、穏やかで感受性豊か。言葉より行動で愛情を表現する。美しいものに惹かれ、自分のペースで人生を楽しむ。争いを避け、調和を大切にする。', prompt: 'A serene middle-aged Japanese man in a paint-stained linen shirt, painting a landscape en plein air on a hilltop overlooking the sea. A gentle breeze, scattered wildflowers, an easel and palette. Impressionist style, soft pastel colors, peaceful atmosphere. --ar 16:9 --v 6.0' },
-  INFP: { catchphrase: '内なる世界の繊細な仲介者', description: 'INFPのおじさんは、理想主義者で深い感情の持ち主。外見は穏やかだが、内面には豊かな想像の世界が広がる。人の痛みに敏感で、自分の価値観に忠実に生きる。', prompt: 'A thoughtful, weary-eyed middle-aged Japanese man with tousled graying hair, sitting by a quiet lake at dawn, holding a small journal. Dressed in a faded cardigan. Surreal, whimsical atmosphere with dreamlike reflections on the water. Soft, ethereal lighting. --ar 16:9 --v 6.0' },
-  INTP: { catchphrase: '終わりなき思考の迷宮を歩む論理学者', description: 'INTPのおじさんは、知的好奇心の権化。常に「なぜ？」を問い続け、理論と可能性の世界に没頭する。社交は苦手だが、専門分野では驚くほど饒舌になる。', prompt: 'A disheveled, intellectual middle-aged Japanese man with round glasses, surrounded by whiteboards covered in complex equations and diagrams in a chaotic university office. Stacks of books everywhere, cold coffee on the desk. Warm but cluttered atmosphere. Academic, realistic style. --ar 16:9 --v 6.0' },
-  ESTP: { catchphrase: '今この瞬間を生きるアクション起業家', description: 'ESTPのおじさんは、行動力とカリスマの持ち主。リスクを恐れず、目の前のチャンスを即座に掴む。退屈が大敵で、常に刺激と挑戦を求める。交渉術にも長ける。', prompt: 'A charismatic, energetic middle-aged Japanese man in a sharp casual jacket, confidently negotiating at a bustling street market in Asia. Dynamic pose, vibrant market colors, street food stalls in background. High energy, cinematic action style. --ar 16:9 --v 6.0' },
-  ESFP: { catchphrase: '人生を祝うエンターテイナー', description: 'ESFPのおじさんは、場を明るくする天性のムードメーカー。今この瞬間を全力で楽しみ、周囲の人にも笑顔を届ける。直感的に人の気持ちを察し、楽しい空間を作る。', prompt: 'A jovial, animated middle-aged Japanese man in a colorful Hawaiian shirt, playing guitar at a lively izakaya surrounded by laughing friends. Warm lantern lighting, beer and yakitori on the table. Festive, joyful atmosphere. Vibrant illustration style. --ar 16:9 --v 6.0' },
-  ENFP: { catchphrase: '可能性に恋する情熱の広報運動家', description: 'ENFPのおじさんは、好奇心と情熱に溢れる。新しいアイデアに次々と飛びつき、人々を巻き込む力がある。型にはまらず、自由な発想で世界に彩りを添える。', prompt: 'A charismatic, smiling middle-aged Japanese man with colorful accessories and a creative hairstyle, standing on a stage during a lively cultural festival, gesturing passionately to an engaged crowd. Vibrant banners, confetti, energetic atmosphere. Pop art style. --ar 16:9 --v 6.0' },
-  ENTP: { catchphrase: '常識を壊す知的トリックスター', description: 'ENTPのおじさんは、議論と知的挑戦を愛する。既存のルールに疑問を投げかけ、新しい視点を提示する。ユーモアのセンスに優れ、退屈な会議を一変させる力を持つ。', prompt: 'A witty, sharp-eyed middle-aged Japanese man in a turtleneck, leaning against a wall covered with sticky notes and mind maps in a creative startup space. Mischievous smile, holding a marker. Modern, dynamic atmosphere with bold colors. Graphic novel style. --ar 16:9 --v 6.0' },
-  ESTJ: { catchphrase: '組織を動かす鉄壁の指揮官', description: 'ESTJのおじさんは、責任感が強く決断力がある。ルールと秩序を重んじ、チームを効率的に導く。伝統を尊重しつつも、成果にこだわる実務家。頼れるリーダーの典型。', prompt: 'A commanding, well-built middle-aged Japanese man in a perfectly pressed suit, standing at the head of a boardroom table giving directions. Polished mahogany table, city skyline through floor-to-ceiling windows. Authoritative, corporate atmosphere. Realistic, high-detail style. --ar 16:9 --v 6.0' },
-  ESFJ: { catchphrase: '皆の笑顔を守る太陽のような世話役', description: 'ESFJのおじさんは、社交的で思いやり深い。コミュニティの中心にいて、誰もが居心地よく過ごせるよう気を配る。伝統行事や人付き合いを大切にし、調和を保つ。', prompt: 'A warm, sociable middle-aged Japanese man in a neat polo shirt, hosting a neighborhood BBQ in a sunny backyard. Handing food to guests with a big smile, children playing nearby. Warm golden light, festive decorations. Wholesome, inviting atmosphere. Illustration style. --ar 16:9 --v 6.0' },
-  ENFJ: { catchphrase: '人の才能を開花させるカリスマ教師', description: 'ENFJのおじさんは、天性のリーダーでありメンター。人の可能性を見出し、成長を支援することに喜びを感じる。情熱的なスピーチで人を動かし、チームの士気を高める。', prompt: 'A passionate, inspiring middle-aged Japanese man in a smart casual outfit, leading a community workshop with animated gestures. Engaged audience of diverse people. Whiteboard with motivational diagrams. Warm, uplifting atmosphere. Bright, editorial illustration style. --ar 16:9 --v 6.0' },
-  ENTJ: { catchphrase: '帝国を築く大胆不敵な指揮官', description: 'ENTJのおじさんは、ビジョンと実行力を兼ね備えた天性の指揮官。大きな目標を設定し、周囲を巻き込んで達成する。効率を極めて追求し、弱さを見せることを嫌う。', prompt: 'A powerful, confident middle-aged Japanese man in a tailored dark overcoat, standing atop a skyscraper rooftop overlooking a glittering cityscape at night. Arms crossed, wind in his hair. Dramatic, cinematic lighting with city lights below. Epic, commanding atmosphere. --ar 16:9 --v 6.0' },
-};
-
-// === STATE ===
-const state = {
-  currentSpectrum: 0, currentQuestion: 0,
-  answers: [], results: [],
-  totalQuestionsAnswered: 0, isAnimating: false,
-};
-
-// === DOM ===
-const $ = (id) => document.getElementById(id);
-const startScreen = $('start-screen'), quizScreen = $('quiz-screen'), resultScreen = $('result-screen');
-const card = $('card'), cardLabel = $('card-label'), cardQuestion = $('card-question');
-const choiceAText = $('choice-a-text'), choiceBText = $('choice-b-text');
-const hintLeft = $('hint-left'), hintRight = $('hint-right');
-const progressSlots = $('progress-slots'), progressFill = $('progress-fill');
-const resultContent = $('result-content');
-
-// === INIT ===
-$('start-btn').addEventListener('click', startQuiz);
-$('btn-a').addEventListener('click', function() { answer('a'); });
-$('btn-b').addEventListener('click', function() { answer('b'); });
-setupSwipe();
-buildProgressSlots();
-
-function startQuiz() {
-  state.currentSpectrum = 0; state.currentQuestion = 0;
-  state.answers = []; state.results = [];
-  state.totalQuestionsAnswered = 0; state.isAnimating = false;
-  resetProgressSlots();
-  switchScreen(quizScreen);
-  showQuestion();
+  );
 }
 
-function switchScreen(target) {
-  [startScreen, quizScreen, resultScreen].forEach(function(s) { s.classList.remove('active'); });
-  target.classList.add('active');
+function ResultScreen({finalType,onReset}){
+  const [show,setShow]=useState(false);
+  useEffect(()=>{const t=setTimeout(()=>setShow(true),400);return()=>clearTimeout(t);},[]);
+
+  const base=finalType.split('-')[0];
+  const variant=finalType.split('-')[1];
+  const d=MBTI_TYPES[base];
+  const compat=COMPATIBILITY[base]||{good:[],bad:[]};
+
+  return(
+    <div className="no-scrollbar" style={{overflowY:'auto',height:'100%',padding:'24px 16px 48px'}}>
+      <div style={{maxWidth:380,margin:'0 auto'}}>
+
+        {/* Header */}
+        <div className="anim-slide-up" style={{textAlign:'center',marginBottom:20}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'4px 14px',borderRadius:20,
+            background:'rgba(245,166,35,.1)',border:'1px solid rgba(245,166,35,.3)',marginBottom:10}}>
+            <span style={{fontSize:11,fontWeight:700,color:'#f5a623',letterSpacing:3}}>RESULT</span>
+          </div>
+          <p style={{color:'#9ca3af',fontSize:14,marginBottom:4}}>あなたのタイプは…</p>
+          <div className="gradient-text" style={{fontSize:44,fontWeight:900,letterSpacing:4}}>{finalType}</div>
+          <p style={{color:d?.color,fontSize:15,fontWeight:700,marginTop:4}}>{d?.nick}</p>
+        </div>
+
+        {/* Personality illustration card */}
+        <div className="anim-slide-up" style={{borderRadius:28,overflow:'hidden',marginBottom:16,
+          background:`linear-gradient(145deg, ${d?.bg||'#1a1030'}, #0f0c1a)`,
+          border:`2px solid ${d?.color||'#f5a623'}44`,
+          boxShadow:`0 0 50px ${d?.color||'#f5a623'}33`,
+          padding:'32px 20px 28px',textAlign:'center'}}>
+          {/* Big emoji */}
+          <div className="anim-float" style={{fontSize:90,lineHeight:1,marginBottom:16,
+            filter:`drop-shadow(0 0 20px ${d?.color}88)`}}>
+            {d?.emoji}
+          </div>
+          {/* Type badge */}
+          <div style={{display:'inline-block',padding:'6px 18px',borderRadius:20,
+            background:`${d?.color}22`,border:`1.5px solid ${d?.color}66`,marginBottom:10}}>
+            <span style={{fontSize:22,fontWeight:900,color:d?.color,letterSpacing:3}}>{base}</span>
+            <span style={{fontSize:13,color:`${d?.color}aa`,marginLeft:6}}>-{variant}</span>
+          </div>
+          {/* Type name */}
+          <div style={{fontSize:20,fontWeight:900,color:'#f5efe0',marginBottom:4}}>{d?.name}</div>
+          <div style={{fontSize:13,color:'#9ca3af'}}>{d?.nick}</div>
+
+          {/* Decorative spectrum dots */}
+          <div style={{display:'flex',justifyContent:'center',gap:6,marginTop:16}}>
+            {['EI','SN','TF','JP'].map(s=>(
+              <div key={s} style={{padding:'3px 8px',borderRadius:10,fontSize:10,fontWeight:700,
+                background:`${SPECTRUM_META[s].color}22`,
+                border:`1px solid ${SPECTRUM_META[s].color}55`,
+                color:SPECTRUM_META[s].color}}>
+                {finalType.includes(s[0]) ? s[0] : s[1]}
+              </div>
+            ))}
+            <div style={{padding:'3px 8px',borderRadius:10,fontSize:10,fontWeight:700,
+              background:`${SPECTRUM_META.AT.color}22`,
+              border:`1px solid ${SPECTRUM_META.AT.color}55`,
+              color:SPECTRUM_META.AT.color}}>-{variant}</div>
+          </div>
+        </div>
+
+        {show&&<>
+          {/* Variant */}
+          <div className="anim-fade-in" style={{borderRadius:18,padding:'14px 16px',marginBottom:12,
+            background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.08)'}}>
+            <p style={{fontSize:11,fontWeight:700,color:'#6b7280',letterSpacing:2,marginBottom:6}}>
+              {variant==='A'?'🛡️ 自己確信型 (Assertive)':'🌊 慎重型 (Turbulent)'}
+            </p>
+            <p style={{fontSize:13,color:'#d1d5db',lineHeight:1.65}}>
+              {variant==='A'?d?.vA:d?.vT}
+            </p>
+          </div>
+
+          {/* Description */}
+          <div className="anim-fade-in" style={{borderRadius:18,padding:'14px 16px',marginBottom:12,
+            background:`${d?.color}0f`,border:`1px solid ${d?.color}33`}}>
+            <p style={{fontSize:11,fontWeight:700,color:d?.color,letterSpacing:1,marginBottom:6}}>キャラクター概要</p>
+            <p style={{fontSize:13,color:'#e5e7eb',lineHeight:1.65}}>{d?.desc}</p>
+          </div>
+
+          {/* Compatibility */}
+          <div className="anim-fade-in" style={{borderRadius:18,padding:'14px 16px',marginBottom:16,
+            background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.08)'}}>
+            <p style={{fontSize:11,fontWeight:700,color:'#6b7280',letterSpacing:2,marginBottom:12}}>💞 相性診断</p>
+            <div style={{marginBottom:12}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                <span style={{fontSize:13}}>💚</span>
+                <span style={{fontSize:12,fontWeight:700,color:'#4ade80'}}>ベストマッチ</span>
+              </div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                {compat.good.map(t=><TypeBadge key={t} type={t}/>)}
+              </div>
+            </div>
+            <div style={{height:1,background:'rgba(255,255,255,.06)',marginBottom:12}}/>
+            <div>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                <span style={{fontSize:13}}>⚠️</span>
+                <span style={{fontSize:12,fontWeight:700,color:'#f87171'}}>要注意タイプ</span>
+              </div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                {compat.bad.map(t=><TypeBadge key={t} type={t}/>)}
+              </div>
+            </div>
+          </div>
+
+          <button onClick={onReset} className="anim-fade-in"
+            style={{width:'100%',padding:16,borderRadius:20,fontWeight:700,fontSize:15,cursor:'pointer',
+              background:'rgba(245,166,35,.1)',border:'2px solid rgba(245,166,35,.4)',color:'#f5a623'}}>
+            もう一度診断する
+          </button>
+        </>}
+      </div>
+    </div>
+  );
 }
 
-// === PROGRESS ===
-function buildProgressSlots() {
-  progressSlots.innerHTML = '';
-  spectrums.forEach(function(sp, i) {
-    if (i > 0) {
-      var d = document.createElement('span');
-      d.className = 'slot-divider'; d.textContent = '\u00B7';
-      progressSlots.appendChild(d);
-    }
-    var slot = document.createElement('div');
-    slot.className = 'progress-slot';
-    slot.innerHTML = '<div class="slot-pair" data-spectrum="' + i + '"><span data-side="a">' + sp.labels[0] + '</span><span data-side="b">' + sp.labels[1] + '</span></div>';
-    progressSlots.appendChild(slot);
-  });
+// ── START SCREEN ──────────────────────────────────────────────────────────────
+
+function StartScreen({onStart}){
+  return(
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',
+      justifyContent:'center',padding:'48px 24px',textAlign:'center',position:'relative'}}>
+      <div style={{position:'absolute',top:'25%',left:'50%',transform:'translate(-50%,-50%)',
+        width:280,height:280,borderRadius:'50%',opacity:.08,filter:'blur(60px)',
+        background:'radial-gradient(circle,#f5a623,transparent)'}}/>
+      <div style={{position:'relative',zIndex:1,maxWidth:360,width:'100%'}}>
+        <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'5px 16px',borderRadius:20,
+          background:'rgba(245,166,35,.1)',border:'1px solid rgba(245,166,35,.3)',marginBottom:20}}>
+          <span style={{fontSize:11,fontWeight:700,color:'#f5a623',letterSpacing:4}}>OJISAN MBTI</span>
+        </div>
+        <h1 style={{fontSize:42,fontWeight:900,lineHeight:1.2,margin:'0 0 12px'}}>
+          <span className="gradient-text">オジサン</span><br/>
+          <span style={{color:'#f5efe0'}}>性格診断</span>
+        </h1>
+        <p style={{fontSize:14,color:'#9ca3af',lineHeight:1.7,margin:'0 0 16px'}}>
+          あなたはどんなオジサン？<br/>
+          <strong style={{color:'#f5a623'}}>16タイプ</strong>から、今すぐ診断。
+        </p>
+        <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:8,marginBottom:24}}>
+          {['⚡ 最速60秒','🎴 16タイプ診断','💞 相性チェック'].map(f=>(
+            <span key={f} style={{fontSize:12,padding:'5px 12px',borderRadius:20,
+              background:'rgba(255,255,255,.05)',border:'1px solid rgba(255,255,255,.1)',color:'#d1d5db'}}>{f}</span>
+          ))}
+        </div>
+
+        {/* Stacked card preview */}
+        <div style={{position:'relative',width:180,height:130,margin:'0 auto 24px'}}>
+          {[3,2,1,0].map(i=>(
+            <div key={i} style={{position:'absolute',inset:0,borderRadius:20,zIndex:i,
+              background:'linear-gradient(135deg,#1e1830,#2d1b69)',
+              border:'1px solid rgba(255,255,255,.1)',
+              transform:`rotate(${(i-1.5)*3}deg) translateY(${i*3}px)`}}/>
+          ))}
+          <div style={{position:'absolute',inset:0,zIndex:10,display:'flex',flexDirection:'column',
+            alignItems:'center',justifyContent:'center',borderRadius:20,
+            background:'linear-gradient(135deg,#1e1830,#2d1b69)'}}>
+            <span style={{fontSize:32,marginBottom:4}}>🍺</span>
+            <span style={{fontSize:11,color:'#9ca3af',fontWeight:600}}>スワイプして回答</span>
+          </div>
+        </div>
+
+        <p style={{fontSize:11,color:'#4b5563',marginBottom:14}}>← カードを左右にスワイプして回答 →</p>
+        <button onClick={onStart}
+          style={{width:'100%',padding:18,borderRadius:22,fontWeight:900,fontSize:18,color:'#fff',
+            cursor:'pointer',background:'linear-gradient(135deg,#f5a623,#e8941a)',border:'none',
+            boxShadow:'0 0 28px rgba(245,166,35,.4)'}}>
+          診断スタート！
+        </button>
+        <p style={{fontSize:11,color:'#374151',marginTop:10}}>最大15問 • 適応式アルゴリズム採用</p>
+      </div>
+    </div>
+  );
 }
 
-function resetProgressSlots() {
-  document.querySelectorAll('.slot-pair span').forEach(function(el) {
-    el.classList.remove('confirmed', 'dimmed', 'spectrum-confirmed-flash');
-  });
-  progressFill.style.width = '0%';
+// ── APP ───────────────────────────────────────────────────────────────────────
+
+function App(){
+  const [screen,setScreen]=useState('start');
+  const {spectrum,question,qi,si,confirmed,done,finalType,handleAnswer,reset}=useAdaptiveMBTI();
+
+  useEffect(()=>{if(done&&screen==='quiz')setScreen('result');},[done,screen]);
+  const handleReset=()=>{reset();setScreen('start');};
+
+  return(
+    <div style={{height:'100vh',display:'flex',flexDirection:'column',
+      background:'linear-gradient(160deg,#0f0c1a 0%,#1a1030 50%,#0f0c1a 100%)'}}>
+      {screen==='start'&&(
+        <div style={{flex:1,overflowY:'auto'}} className="no-scrollbar">
+          <StartScreen onStart={()=>setScreen('quiz')}/>
+        </div>
+      )}
+      {screen==='quiz'&&question&&(
+        <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+          <ProgressBar si={si} qi={qi} confirmed={confirmed}/>
+          <QuestionCard key={question.id} question={question} spectrum={spectrum} onAnswer={handleAnswer}/>
+        </div>
+      )}
+      {screen==='result'&&finalType&&(
+        <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+          <ResultScreen finalType={finalType} onReset={handleReset}/>
+        </div>
+      )}
+    </div>
+  );
 }
 
-function confirmProgressSlot(idx, side) {
-  var pair = document.querySelector('.slot-pair[data-spectrum="' + idx + '"]');
-  if (!pair) return;
-  var c = pair.querySelector('[data-side="' + side + '"]');
-  var d = pair.querySelector('[data-side="' + (side === 'a' ? 'b' : 'a') + '"]');
-  c.classList.add('confirmed', 'spectrum-confirmed-flash');
-  d.classList.add('dimmed');
-}
-
-function updateProgressBar() {
-  progressFill.style.width = (state.results.length / spectrums.length * 100) + '%';
-}
-
-// === QUESTIONS ===
-function showQuestion() {
-  var sp = spectrums[state.currentSpectrum];
-  var q = sp.questions[state.currentQuestion];
-  cardLabel.textContent = sp.fullLabels[0] + ' vs ' + sp.fullLabels[1];
-  cardQuestion.textContent = q.text;
-  choiceAText.textContent = q.a;
-  choiceBText.textContent = q.b;
-  card.classList.remove('card-enter');
-  void card.offsetWidth;
-  card.classList.add('card-enter');
-}
-
-function answer(choice) {
-  if (state.isAnimating) return;
-  state.answers.push(choice);
-  state.totalQuestionsAnswered++;
-  var qIdx = state.currentQuestion;
-
-  if (qIdx === 0) {
-    state.currentQuestion = 1;
-    showQuestion();
-  } else if (qIdx === 1) {
-    if (state.answers[0] === state.answers[1]) {
-      confirmSpectrum(state.answers[0]);
-    } else {
-      state.currentQuestion = 2;
-      showQuestion();
-    }
-  } else if (qIdx === 2) {
-    var aCount = state.answers.filter(function(a) { return a === 'a'; }).length;
-    confirmSpectrum(aCount >= 2 ? 'a' : 'b');
-  }
-}
-
-function confirmSpectrum(side) {
-  state.results.push(side);
-  confirmProgressSlot(state.currentSpectrum, side);
-  updateProgressBar();
-  if (state.currentSpectrum < spectrums.length - 1) {
-    state.currentSpectrum++;
-    state.currentQuestion = 0;
-    state.answers = [];
-    showQuestion();
-  } else {
-    showResults();
-  }
-}
-
-// === RESULTS ===
-function showResults() {
-  var letters = state.results.map(function(side, i) {
-    return spectrums[i].labels[side === 'a' ? 0 : 1];
-  });
-  var mbti4 = letters.slice(0, 4).join('');
-  var at = letters[4], hl = letters[5];
-  var fullCode = mbti4 + '-' + at + '/' + hl;
-  var data = typeResults[mbti4];
-  if (!data) { resultContent.innerHTML = '<p>エラーが発生しました。</p>'; switchScreen(resultScreen); return; }
-
-  var emojiMap = {
-    INTJ:'\uD83E\uDDE0', INTP:'\uD83D\uDD2C', ENTJ:'\uD83D\uDC54', ENTP:'\uD83D\uDCA1',
-    INFJ:'\uD83D\uDD6F\uFE0F', INFP:'\uD83D\uDCD6', ENFJ:'\uD83C\uDF93', ENFP:'\uD83C\uDFA8',
-    ISTJ:'\uD83D\uDCCB', ISFJ:'\uD83C\uDF3F', ESTJ:'\uD83C\uDFE2', ESFJ:'\u2600\uFE0F',
-    ISTP:'\uD83D\uDD27', ISFP:'\uD83C\uDFA8', ESTP:'\uD83C\uDFCD\uFE0F', ESFP:'\uD83C\uDFB8',
-  };
-  var emoji = emojiMap[mbti4] || '\uD83E\uDDD4';
-
-  var atDesc = at === 'A'
-    ? '<strong style="color:var(--accent-light)">Assertive\uFF08\u81EA\u5DF1\u78BA\u4FE1\u578B\uFF09</strong>\uFF1A\u30B9\u30C8\u30EC\u30B9\u306B\u5F37\u304F\u3001\u81EA\u5206\u306E\u5224\u65AD\u3092\u4FE1\u983C\u3059\u308B\u3002\u611F\u60C5\u306B\u632F\u308A\u56DE\u3055\u308C\u306B\u304F\u3044\u3002'
-    : '<strong style="color:var(--accent-light)">Turbulent\uFF08\u614E\u91CD\u578B\uFF09</strong>\uFF1A\u5B8C\u74A7\u3092\u6C42\u3081\u3001\u5E38\u306B\u6539\u5584\u3092\u610F\u8B58\u3059\u308B\u3002\u7E4A\u7D30\u3060\u304C\u6210\u9577\u3078\u306E\u610F\u6B32\u304C\u9AD8\u3044\u3002';
-  var hlDesc = hl === 'H'
-    ? '<strong style="color:var(--accent-light)">Harmony\uFF08\u5354\u8ABF\u578B\uFF09</strong>\uFF1A\u30C1\u30FC\u30E0\u30EF\u30FC\u30AF\u3068\u8ABF\u548C\u3092\u91CD\u8996\u3002\u5171\u6709\u3055\u308C\u305F\u76EE\u6A19\u306B\u5411\u304B\u3063\u3066\u4EBA\u3068\u5354\u529B\u3059\u308B\u3053\u3068\u306B\u559C\u3073\u3092\u611F\u3058\u308B\u3002'
-    : '<strong style="color:var(--accent-light)">Lone Wolf\uFF08\u72EC\u7ACB\u578B\uFF09</strong>\uFF1A\u72EC\u7ACB\u3057\u3066\u50CD\u304F\u3053\u3068\u3092\u597D\u3080\u3002\u500B\u4EBA\u306E\u5C02\u9580\u6027\u3068\u72EC\u81EA\u306E\u4FA1\u5024\u3092\u8FFD\u6C42\u3059\u308B\u30B9\u30DA\u30B7\u30E3\u30EA\u30B9\u30C8\u3002';
-
-  var spectrumHTML = state.results.map(function(side, i) {
-    var sp = spectrums[i];
-    var isA = side === 'a';
-    return '<div class="spectrum-row">' +
-      '<span class="spectrum-label-left">' + sp.labels[0] + '</span>' +
-      '<div class="spectrum-bar-track"><div class="spectrum-bar-fill ' + (isA ? 'left' : 'right') + '" style="width:75%;' + (isA ? '' : 'margin-left:25%') + '"></div></div>' +
-      '<span class="spectrum-label-right">' + sp.labels[1] + '</span>' +
-      '<span class="spectrum-confirmed">' + sp.labels[isA ? 0 : 1] + '</span></div>';
-  }).join('');
-
-  resultContent.innerHTML =
-    '<div class="result-type-code">' + fullCode + '</div>' +
-    '<div class="result-catchphrase">' + data.catchphrase + '</div>' +
-    '<div class="ojisan-card"><div class="ojisan-placeholder">' +
-      '<div class="ojisan-emoji">' + emoji + '</div>' +
-      '<div class="ojisan-prompt-label">Image Generation Prompt</div>' +
-      '<div class="ojisan-prompt-text">' + data.prompt + '</div>' +
-    '</div></div>' +
-    '<div class="result-description"><h3>\u3042\u306A\u305F\u306E\u30BF\u30A4\u30D7</h3>' +
-      '<p>' + data.description + '</p>' +
-      '<p style="margin-top:0.75rem;color:var(--text-dim);font-size:0.8rem">' + atDesc + '</p>' +
-      '<p style="margin-top:0.5rem;color:var(--text-dim);font-size:0.8rem">' + hlDesc + '</p>' +
-    '</div>' +
-    '<div class="spectrum-breakdown">' + spectrumHTML + '</div>' +
-    '<button class="btn-retry" id="btn-retry">\u3082\u3046\u4E00\u5EA6\u8A3A\u65AD\u3059\u308B</button>';
-
-  $('btn-retry').addEventListener('click', function() { switchScreen(startScreen); });
-  switchScreen(resultScreen);
-  resultScreen.scrollTop = 0;
-}
-
-// === SWIPE ===
-function setupSwipe() {
-  var startX = 0, startY = 0, currentX = 0, isDragging = false;
-  var THRESHOLD = 80;
-
-  function onStart(x, y) {
-    if (state.isAnimating) return;
-    isDragging = true; startX = x; startY = y; currentX = 0;
-    card.classList.add('swiping');
-  }
-  function onMove(x, y) {
-    if (!isDragging) return;
-    var dx = x - startX, dy = y - startY;
-    if (Math.abs(dy) > Math.abs(dx) * 1.5 && Math.abs(dx) < 20) return;
-    currentX = dx;
-    card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx * 0.08) + 'deg)';
-    var op = Math.min(Math.abs(dx) / THRESHOLD, 1);
-    hintRight.style.opacity = dx > 0 ? op : 0;
-    hintLeft.style.opacity = dx < 0 ? op : 0;
-  }
-  function onEnd() {
-    if (!isDragging) return;
-    isDragging = false;
-    card.classList.remove('swiping');
-    if (Math.abs(currentX) >= THRESHOLD) {
-      state.isAnimating = true;
-      var dir = currentX > 0 ? 1 : -1;
-      card.classList.add('animate-out');
-      card.style.transform = 'translateX(' + (dir * 400) + 'px) rotate(' + (dir * 30) + 'deg)';
-      card.style.opacity = '0';
-      setTimeout(function() {
-        card.classList.remove('animate-out');
-        card.style.transform = ''; card.style.opacity = '';
-        state.isAnimating = false;
-        answer(dir > 0 ? 'a' : 'b');
-      }, 300);
-    } else {
-      card.style.transform = '';
-      hintLeft.style.opacity = 0; hintRight.style.opacity = 0;
-    }
-  }
-
-  card.addEventListener('touchstart', function(e) { var t = e.touches[0]; onStart(t.clientX, t.clientY); }, { passive: true });
-  card.addEventListener('touchmove', function(e) { var t = e.touches[0]; onMove(t.clientX, t.clientY); }, { passive: true });
-  card.addEventListener('touchend', onEnd);
-  card.addEventListener('touchcancel', onEnd);
-  card.addEventListener('mousedown', function(e) { e.preventDefault(); onStart(e.clientX, e.clientY); });
-  window.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
-  window.addEventListener('mouseup', onEnd);
-}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
